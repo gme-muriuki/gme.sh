@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@fontsource-variable/jetbrains-mono':
+        specifier: 5.2.5
+        version: 5.2.5
+      '@fontsource-variable/source-serif-4':
+        specifier: 5.2.5
+        version: 5.2.5
       '@radix-ui/react-collapsible':
         specifier: 1.1.3
         version: 1.1.3(@types/react-dom@18.3.1)(@types/react@18.3.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -343,6 +349,12 @@ packages:
 
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
+
+  '@fontsource-variable/jetbrains-mono@5.2.5':
+    resolution: {integrity: sha512-G3sN1xq1moZd0JL+hFaA4MEdsiQS+JXC/z7m+EqA5/Fzn5CQlXGUaaNKFGQdDsFuLTnCfW0KOOSWHjygNfjEPw==}
+
+  '@fontsource-variable/source-serif-4@5.2.5':
+    resolution: {integrity: sha512-pME7tAmvBb9F/fVsiXVQsiaBiAESutwkt+e6ix4BqTlrLZOcZFaGJvBu3oCcw1YKOtBUFcz3+89/WIhn+wjt3A==}
 
   '@isaacs/fs-minipass@4.0.1':
     resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
@@ -1621,6 +1633,10 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
 
   '@floating-ui/utils@0.2.11': {}
+
+  '@fontsource-variable/jetbrains-mono@5.2.5': {}
+
+  '@fontsource-variable/source-serif-4@5.2.5': {}
 
   '@isaacs/fs-minipass@4.0.1':
     dependencies:
