@@ -8,9 +8,16 @@ import Archive from './pages/Archive'
 import Write from './pages/Write'
 import PostPage from './pages/PostPage'
 import StaticPage from './pages/StaticPage'
+import RssFeed from './pages/RssFeed'
+import OgCard from './pages/OgCard'
 import NotFound from './pages/NotFound'
 
 export const router = createBrowserRouter([
+  {
+    // standalone — no chrome — for screenshotting
+    path: '/og/:slug',
+    element: <OgCard />,
+  },
   {
     path: '/',
     element: <Layout />,
@@ -30,6 +37,7 @@ export const router = createBrowserRouter([
       { path: 'talks', element: <StaticPage slug="talks" /> },
       { path: 'reading', element: <StaticPage slug="reading" /> },
       { path: 'write', element: <Write /> },
+      { path: 'rss.xml', element: <RssFeed /> },
       { path: '*', element: <NotFound /> },
     ],
   },
