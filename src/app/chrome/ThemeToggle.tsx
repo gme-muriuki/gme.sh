@@ -10,12 +10,12 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={`Switch to ${next} mode`}
       title={`Switch to ${next} mode`}
-      className="inline-flex size-8 items-center justify-center rounded text-ink-muted hover:text-ink transition-colors"
+      className="inline-flex size-7 items-center justify-center rounded text-ink-muted hover:text-ink transition-colors"
     >
       {resolved === 'dark' ? (
-        <Sun aria-hidden className="size-4" />
+        <Sun aria-hidden className="size-3.5" />
       ) : (
-        <Moon aria-hidden className="size-4" />
+        <Moon aria-hidden className="size-3.5" />
       )}
     </button>
   )

@@ -7,8 +7,9 @@ export function Layout() {
     <div className="flex min-h-full flex-col">
       <Header />
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-4xl px-6 py-12">
+        <div className="chrome-frame editorial-grid py-14">
           <Outlet />
+          <aside className="hidden lg:block" aria-hidden />
         </div>
       </main>
       <Footer />
