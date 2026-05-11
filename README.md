@@ -1,11 +1,23 @@
+# blog
 
-  # Build User Interface
+Design prototype for a personal technical blog. React + Vite + Tailwind v4 + MDX.
 
-  This is a code bundle for Build User Interface. The original project is available at https://www.figma.com/design/iNVB7ISny3xDDGrctDRscV/Build-User-Interface.
+Production target: Next.js + MDX. This artifact exists so the design is navigable in a real browser before the port.
 
-  ## Running the code
+## Dev
 
-  Run `npm i` to install the dependencies.
+```
+pnpm install
+pnpm dev
+```
 
-  Run `npm run dev` to start the development server.
-  
+## Stack
+
+- Vite 6 + React 18
+- Tailwind v4 (`@tailwindcss/vite`)
+- MDX via `@mdx-js/rollup` (added in commit 6)
+- Shiki (Catppuccin Latte / Mocha) for code highlighting
+- react-router 7
+- cmdk + fuse.js for Cmd+K search
+
+Brief lives at `src/imports/pasted_text/blog-prototype-design.md`.
