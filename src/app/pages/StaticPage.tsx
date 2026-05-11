@@ -1,10 +1,15 @@
 import { findPost } from '@/app/content-index'
 import { PageLayout } from '@/app/post/PageLayout'
+import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 type Props = { slug: string }
 
 export default function StaticPage({ slug }: Props) {
   const entry = findPost('page', slug)
+  useDocumentMeta({
+    title: entry?.frontmatter.title ?? slug,
+    description: entry?.frontmatter.dek,
+  })
   if (!entry) {
     return (
       <article>

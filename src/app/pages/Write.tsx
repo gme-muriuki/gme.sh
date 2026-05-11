@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMdxEval } from '@/app/hooks/useMdxEval'
+import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 import { EssayLayout } from '@/app/post/EssayLayout'
 import { NoteLayout } from '@/app/post/NoteLayout'
 import { ShippedLayout } from '@/app/post/ShippedLayout'
@@ -25,6 +26,7 @@ Callouts use a quiet brand-edged frame.
 `
 
 export default function Write() {
+  useDocumentMeta({ title: 'Write' })
   const [postType, setPostType] = useState<PostType>('essay')
   const [title, setTitle] = useState('Untitled')
   const [dek, setDek] = useState('')

@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
 import { publishedPosts } from '@/app/content-index'
 import type { PostEntry } from '@/app/content-index'
+import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 const SITE_URL = 'https://example.com'
 const SITE_TITLE = 'James Muriuki'
@@ -58,11 +58,8 @@ ${items}
 }
 
 export default function RssFeed() {
+  useDocumentMeta({ title: 'RSS feed' })
   const xml = generateRss(publishedPosts)
-
-  useEffect(() => {
-    document.title = 'RSS feed — preview'
-  }, [])
 
   return (
     <article>

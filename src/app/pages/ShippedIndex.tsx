@@ -1,8 +1,10 @@
 import { postsByType } from '@/app/content-index'
 import { IndexHeader } from '@/app/chrome/IndexHeader'
 import { PostRow } from '@/app/post/PostRow'
+import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 export default function ShippedIndex() {
+  useDocumentMeta({ title: 'Shipped' })
   const shipped = postsByType('shipped')
   return (
     <article>

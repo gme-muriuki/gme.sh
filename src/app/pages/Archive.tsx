@@ -2,8 +2,10 @@ import { publishedPosts } from '@/app/content-index'
 import type { PostEntry } from '@/app/content-index'
 import { IndexHeader } from '@/app/chrome/IndexHeader'
 import { ArchiveRow } from '@/app/post/ArchiveRow'
+import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 export default function Archive() {
+  useDocumentMeta({ title: 'Archive' })
   const groups = new Map<string, PostEntry[]>()
   for (const p of publishedPosts) {
     if (p.type === 'page') continue

@@ -2,6 +2,7 @@ import { useParams } from 'react-router'
 import { format } from 'date-fns'
 import { allPosts } from '@/app/content-index'
 import { SquareMark } from '@/app/chrome/SquareMark'
+import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 const typeLabels = {
   essay: 'Essay',
@@ -18,6 +19,7 @@ export default function OgCard() {
   const { slug } = useParams<{ slug: string }>()
   const entry = allPosts.find((p) => p.slug === slug)
   const f = entry?.frontmatter
+  useDocumentMeta({ title: f?.title ? `OG · ${f.title}` : 'OG card' })
 
   return (
     <div className="min-h-full w-full flex items-center justify-center bg-[#0f0d0a]/[0.06] py-12 px-4">

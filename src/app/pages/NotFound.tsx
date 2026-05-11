@@ -1,6 +1,8 @@
 import { Link } from 'react-router'
+import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 export default function NotFound() {
+  useDocumentMeta({ title: 'Not found' })
   return (
     <article>
       <p className="text-sm text-ink-muted font-mono uppercase tracking-wider">404</p>

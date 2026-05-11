@@ -4,6 +4,7 @@ import type { PostType } from '@/app/content-index'
 import { EssayLayout } from '@/app/post/EssayLayout'
 import { NoteLayout } from '@/app/post/NoteLayout'
 import { ShippedLayout } from '@/app/post/ShippedLayout'
+import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 type Props = {
   type: 'essay' | 'note' | 'shipped'
@@ -17,11 +18,14 @@ const pathPrefix: Record<Props['type'], string> = {
 
 export default function PostPage({ type }: Props) {
   const { slug } = useParams<{ slug: string }>()
+  const entry = slug ? findPost(type as PostType, slug) : undefined
+  useDocumentMeta({
+    title: entry?.frontmatter.title,
+    description: entry?.frontmatter.dek,
+  })
   if (!slug) {
     return <NotHere type={type} slug="" />
   }
-
-  const entry = findPost(type as PostType, slug)
   if (!entry) {
     return <NotHere type={type} slug={slug} />
   }

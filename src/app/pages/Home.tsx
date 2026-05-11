@@ -3,8 +3,12 @@ import { format } from 'date-fns'
 import { postsByType } from '@/app/content-index'
 import type { PostEntry } from '@/app/content-index'
 import { PostRow } from '@/app/post/PostRow'
+import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 export default function Home() {
+  useDocumentMeta({
+    description: 'James Muriuki — Rust, systems, half-baked ideas.',
+  })
   const essays = postsByType('essay')
   const notes = postsByType('note')
   const shipped = postsByType('shipped')
