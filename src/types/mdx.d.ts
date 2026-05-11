@@ -11,6 +11,9 @@ declare module '*.mdx' {
     growth?: 'seedling' | 'growing' | 'evergreen'
     lastTended?: string
     readingTime?: number
+    draft?: boolean
+    hero?: string
+    links?: { label: string; href: string }[]
     [key: string]: unknown
   }
 
