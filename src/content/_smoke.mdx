@@ -2,12 +2,15 @@
 title: MDX smoke test
 date: 2026-05-11
 type: page
-dek: Exercises the pipeline — frontmatter, GFM, inline + display math, a fenced code block with notation transformers.
+dek: Exercises every MDX component once. Will be removed in commit 10 when content-index lands.
 ---
 
-GFM with ~strikethrough~ and inline math $a^2 + b^2 = c^2$.
+GFM with ~strikethrough~ and inline math $a^2 + b^2 = c^2$. Inline `code` reads
+in burnt-sienna tint.
 
-```rust
+## A code block with metadata
+
+```rust src/allocator.rs
 fn allocate(layout: Layout) -> *mut u8 {
     let raw = System.alloc(layout);   // [!code highlight]
     debug_assert!(!raw.is_null());
@@ -15,7 +18,9 @@ fn allocate(layout: Layout) -> *mut u8 {
 }
 ```
 
-```rust
+## A diff block
+
+```rust src/bucket.rs
 - let old = self.bucket[i];          // [!code --]
 + let old = mem::replace(&mut self.bucket[i], Bucket::Empty); // [!code ++]
   if let Some(entry) = old.entry() {
@@ -23,14 +28,79 @@ fn allocate(layout: Layout) -> *mut u8 {
   }
 ```
 
-Display math:
+## File tabs
+
+<FileTabs>
+```rust src/lib.rs
+pub mod allocator;
+pub use allocator::Allocator;
+```
+```rust src/main.rs
+fn main() {
+    println!("running");
+}
+```
+</FileTabs>
+
+## Callouts
+
+<Callout type="note">
+This is a quiet note. The label sits in mono micro, the body in the same serif as the page.
+</Callout>
+
+<Callout type="warning">
+This one is a warning — same chrome, different label.
+</Callout>
+
+## A terminal block
+
+<Terminal>{`$ cargo build --release
+   Compiling allocator v0.1.0
+    Finished release in 8.42s
+$ ./target/release/allocator --bench
+ok: 4.21 ns/op`}</Terminal>
+
+## A sidenote
+
+Sidenotes appear inline in the source but float into the right rail on desktop.<Sidenote>This is the sidenote body. It will appear in the right margin alongside the line that triggered it.</Sidenote> On mobile they collapse to a popover.
+
+## A pull quote
+
+<PullQuote cite="me, halfway through">
+the only good allocator is the one you don't have to think about
+</PullQuote>
+
+## Display math
 
 $$
 \sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}
 $$
 
-| stage     | meaning                |
-| --------- | ---------------------- |
-| seedling  | half-thought           |
-| growing   | actively tended        |
-| evergreen | I stand behind it      |
+## A mermaid diagram
+
+<Mermaid>{`stateDiagram-v2
+  [*] --> Empty
+  Empty --> Occupied : insert
+  Occupied --> Tombstone : remove
+  Tombstone --> Occupied : reinsert
+  Occupied --> Empty : clear`}</Mermaid>
+
+## A demo placeholder
+
+<Demo title="hash insert timing">
+  <p className="text-sm text-ink-muted">interactive insert/remove graph would mount here</p>
+</Demo>
+
+## A table
+
+| stage     | meaning              |
+| --------- | -------------------- |
+| seedling  | half-thought         |
+| growing   | actively tended      |
+| evergreen | I stand behind it    |
+
+## Blockquote
+
+> Asymmetry is the necessary condition of a good editorial layout.
+
+A final paragraph to close the demo. Nothing here is real content.

@@ -2,4 +2,5 @@
 @import './tailwind.css';
 @import './theme.css';
 @import './shiki.css';
+@import './mdx.css';
 @import 'katex/dist/katex.min.css';

@@ -8,6 +8,8 @@ import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+import rehypeSlug from 'rehype-slug'
+import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypeShiki from '@shikijs/rehype'
 import {
   transformerNotationDiff,
@@ -15,6 +17,22 @@ import {
   transformerNotationFocus,
   transformerNotationHighlight,
 } from '@shikijs/transformers'
+import type { ShikiTransformer } from 'shiki'
+
+// reads `\`\`\`rust src/lib.rs` style meta and attaches filename + language
+// to the rendered <pre> so the Pre MDX component can render the chrome.
+const transformerMetadata: ShikiTransformer = {
+  name: 'metadata',
+  pre(node) {
+    const lang = this.options.lang
+    if (lang) node.properties['data-language'] = lang
+    const meta = (this.options.meta as { __raw?: string } | undefined)?.__raw
+    if (meta) {
+      const tok = meta.split(/\s+/).find((s) => /[./]/.test(s))
+      if (tok) node.properties['data-filename'] = tok
+    }
+  },
+}
 
 export default defineConfig({
   plugins: [
@@ -28,6 +46,14 @@ export default defineConfig({
           remarkMath,
         ],
         rehypePlugins: [
+          rehypeSlug,
+          [
+            rehypeAutolinkHeadings,
+            {
+              behavior: 'wrap',
+              properties: { className: ['heading-anchor'] },
+            },
+          ],
           rehypeKatex,
           [
             rehypeShiki,
@@ -42,6 +68,7 @@ export default defineConfig({
                 transformerNotationHighlight(),
                 transformerNotationFocus(),
                 transformerNotationErrorLevel(),
+                transformerMetadata,
               ],
             },
           ],

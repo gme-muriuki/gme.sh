@@ -1,0 +1,165 @@
+/* prose typography for rendered MDX content. apply via .prose-essay on
+   the wrapper element. Tailwind utilities still win where used inline. */
+
+.prose-essay {
+  font-size: 17.5px;
+  line-height: 1.72;
+  color: var(--ink);
+  counter-reset: sidenote;
+  position: relative;
+}
+
+.prose-essay > * + * {
+  margin-top: 1.25rem;
+}
+
+.prose-essay h2 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  letter-spacing: -0.013em;
+  line-height: 1.1;
+  margin-top: 3.5rem;
+  margin-bottom: 0.5rem;
+}
+.prose-essay h3 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.008em;
+  margin-top: 2.25rem;
+  margin-bottom: 0.25rem;
+}
+.prose-essay h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-top: 1.75rem;
+}
+
+/* rehype-autolink-headings wraps inner text in an <a> — kill the link */
+.prose-essay .heading-anchor,
+.prose-essay .heading-anchor:hover {
+  color: inherit;
+  text-decoration: none;
+}
+
+.prose-essay p {
+  margin-block: 1.25rem;
+}
+
+.prose-essay ul,
+.prose-essay ol {
+  margin-block: 1.25rem;
+  padding-left: 1.5rem;
+}
+.prose-essay ul { list-style: disc; }
+.prose-essay ol { list-style: decimal; }
+.prose-essay li { margin-block: 0.4rem; }
+.prose-essay li > p { margin-block: 0.4rem; }
+
+.prose-essay blockquote {
+  border-left: 2px solid var(--brand);
+  padding-left: 1.25rem;
+  font-style: italic;
+  color: var(--ink-muted);
+  margin-block: 1.75rem;
+}
+
+.prose-essay table {
+  font-size: 14px;
+  margin-block: 1.75rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+.prose-essay th {
+  text-align: left;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  padding: 0.5rem 1.25rem 0.5rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.prose-essay td {
+  padding: 0.5rem 1.25rem 0.5rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.prose-essay hr {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin-block: 2.5rem;
+  max-width: 6rem;
+  margin-inline: auto;
+}
+
+.prose-essay strong { font-weight: 600; }
+.prose-essay em { font-style: italic; }
+
+/* --- sidenotes ----------------------------------------------------- */
+
+.sidenote-marker {
+  counter-increment: sidenote;
+  color: var(--brand);
+  font-family: var(--font-mono);
+  font-size: 0.65em;
+  font-weight: 600;
+  vertical-align: super;
+  line-height: 0;
+}
+.sidenote-marker::after {
+  content: counter(sidenote);
+}
+
+.sidenote-marker-btn {
+  background: none;
+  border: 0;
+  padding: 0 0.05em;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.sidenote-margin {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .sidenote-margin {
+    display: block;
+    float: right;
+    clear: right;
+    width: 13rem;
+    margin-right: -16rem;
+    margin-top: 0.25em;
+    margin-left: 1rem;
+    margin-bottom: 0.75rem;
+    border-left: 1px solid var(--rule);
+    padding-left: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--ink-muted);
+  }
+  .sidenote-margin .num {
+    color: var(--brand);
+    font-weight: 600;
+    margin-right: 0.4em;
+  }
+  .sidenote-margin .num::after {
+    content: counter(sidenote);
+  }
+}
+
+/* visually hide the marker counter increment in mobile branch */
+@media (max-width: 1023px) {
+  .sidenote-margin {
+    display: none;
+  }
+}
+
+/* hide popover content on lg+ since the margin annotation shows it */
+@media (min-width: 1024px) {
+  .sidenote-popover {
+    display: none !important;
+  }
+}
