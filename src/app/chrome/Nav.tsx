@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router'
-import { cn } from '@/app/components/ui/utils'
+import { cn } from '@/app/lib/cn'
 
 const primary = [
   { to: '/essays', label: 'Essays' },
