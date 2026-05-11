@@ -1,0 +1,36 @@
+---
+title: MDX smoke test
+date: 2026-05-11
+type: page
+dek: Exercises the pipeline — frontmatter, GFM, inline + display math, a fenced code block with notation transformers.
+---
+
+GFM with ~strikethrough~ and inline math $a^2 + b^2 = c^2$.
+
+```rust
+fn allocate(layout: Layout) -> *mut u8 {
+    let raw = System.alloc(layout);   // [!code highlight]
+    debug_assert!(!raw.is_null());
+    raw
+}
+```
+
+```rust
+- let old = self.bucket[i];          // [!code --]
++ let old = mem::replace(&mut self.bucket[i], Bucket::Empty); // [!code ++]
+  if let Some(entry) = old.entry() {
+      tombstone(entry);
+  }
+```
+
+Display math:
+
+$$
+\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}
+$$
+
+| stage     | meaning                |
+| --------- | ---------------------- |
+| seedling  | half-thought           |
+| growing   | actively tended        |
+| evergreen | I stand behind it      |

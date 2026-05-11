@@ -14,6 +14,7 @@ import Reading from './pages/Reading'
 import Write from './pages/Write'
 import PostPage from './pages/PostPage'
 import NotFound from './pages/NotFound'
+import MdxSmoke from './pages/MdxSmoke'
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
       { path: 'talks', element: <Talks /> },
       { path: 'reading', element: <Reading /> },
       { path: 'write', element: <Write /> },
+      { path: '_smoke', element: <MdxSmoke /> },
       { path: '*', element: <NotFound /> },
     ],
   },

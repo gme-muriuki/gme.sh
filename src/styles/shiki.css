@@ -1,0 +1,87 @@
+/* dual-theme bridge — shiki injects --shiki-light / --shiki-dark inline,
+   this stylesheet picks the right one based on .dark on html. */
+
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
+
+pre.shiki {
+  padding: 1rem 1.25rem;
+  border-radius: 0.25rem;
+  font-size: 13.5px;
+  line-height: 1.65;
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+}
+
+.shiki code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+.shiki .line {
+  display: inline-block;
+  width: 100%;
+  padding-inline: 0;
+}
+
+/* @shikijs/transformers — notation diff (// [!code ++], // [!code --]) */
+.shiki .line.diff.add {
+  background-color: rgba(40, 167, 69, 0.10);
+}
+.shiki .line.diff.remove {
+  background-color: rgba(220, 53, 69, 0.10);
+}
+.shiki .line.diff::before {
+  display: inline-block;
+  width: 1.2ch;
+  margin-right: 0.5ch;
+  text-align: center;
+  user-select: none;
+}
+.shiki .line.diff.add::before {
+  content: '+';
+  color: rgb(40, 167, 69);
+}
+.shiki .line.diff.remove::before {
+  content: '-';
+  color: rgb(220, 53, 69);
+}
+
+/* highlight notation (// [!code highlight]) */
+.shiki .line.highlighted {
+  background-color: var(--code-tint);
+  box-shadow: inset 2px 0 var(--brand);
+}
+
+/* focus notation (// [!code focus]) — dim non-focused lines */
+.shiki.has-focused .line:not(.focused) {
+  filter: opacity(0.4);
+  transition: filter 220ms ease;
+}
+.shiki.has-focused:hover .line:not(.focused) {
+  filter: none;
+}
+
+/* error / warning notation */
+.shiki .line.highlighted.error {
+  background-color: rgba(220, 53, 69, 0.12);
+}
+.shiki .line.highlighted.warning {
+  background-color: rgba(255, 193, 7, 0.10);
+}
+
+/* katex display blocks — match measure, breathe */
+.katex-display {
+  margin-block: 1.25rem;
+  overflow-x: auto;
+}
