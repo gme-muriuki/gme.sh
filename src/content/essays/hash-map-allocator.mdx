@@ -1,0 +1,203 @@
+---
+title: Why I rewrote my hash map allocator (and you probably shouldn't)
+date: 2026-04-22
+dek: A weekend project, an eighteen percent speedup, and an entire month of careful evidence that you don't actually want this for production.
+readingTime: 12
+tags:
+  - rust
+  - allocators
+  - hash-maps
+  - performance
+series:
+  name: Writing an allocator
+  index: 2
+  total: 4
+---
+
+I rewrote my hash map allocator over a weekend, and on the workloads I actually care about it is now eighteen percent faster. The diff was about three hundred lines. The argument for the change took two paragraphs in a notebook.
+
+The argument for telling you not to do this takes the rest of this post.
+
+The standard library `HashMap` is good. It is good not in the way most software is "good" — adequate to its load, kept alive by careful maintenance — but good in the way a finely-balanced lathe is good. People have spent years on it. The probe sequences are tuned, the SIMD is real, the load factor sits where it does because someone benchmarked it on a thousand cores. If you have a hash map problem, the answer is almost always to first measure whether you actually have a hash map problem, and then to measure whether you actually have one that `HashMap` makes worse.
+
+I do not have one of those problems. I have a niche one.<Sidenote>Specifically: a few million tiny entries with a known cardinality and an access pattern that bunches keys into local clusters. `HashMap`'s probe sequence works against the cache there.</Sidenote> The rewrite was justified for me. It is almost certainly not justified for you. This is not a humble disclaimer; it is the entire thesis.
+
+## What I started with
+
+The original implementation looked like this:
+
+```rust src/bucket.rs
+pub(crate) enum Bucket<E> {
+    Empty,
+    Occupied(E),
+    Tombstone,
+}
+
+impl<E> Bucket<E> {
+    pub(crate) fn entry(&self) -> Option<&E> {
+        match self {
+            Self::Occupied(e) => Some(e),
+            _ => None,
+        }
+    }
+}
+```
+
+Linear probing, tombstones on remove, the whole textbook. Each `Bucket` is two pointers wide in practice — one tag, one payload — and the slot table is a `Box<[Bucket<E>]>`. Insertion walks the table from `hash & mask`, swaps into the first non-occupied slot, returns the displaced entry if any.
+
+The slot lookup, simplified to within an inch of its life:
+
+```rust src/probe.rs
+let mut i = hash as usize & self.mask;
+loop {
+    match &self.table[i] {
+        Bucket::Empty => return None,
+        Bucket::Occupied(e) if e.matches(key) => return Some(e),  // [!code highlight]
+        _ => i = (i + 1) & self.mask,
+    }
+}
+```
+
+You will note immediately that this is the world's most predictable code, and it is not the part I changed.
+
+## The bug that wasn't quite a bug
+
+I had a stable failure: under heavy churn the table would creep toward seventy percent tombstones and probe sequences would lengthen, and the twelve-nanosecond insert became a thirty-eight-nanosecond insert. The fix textbooks suggest is "rehash on a tombstone threshold." That's correct, and that's also the first thing the original code did. The problem is what _triggers_ the rehash.
+
+I was reading the bucket back to inspect its old value before deciding whether to write a tombstone:
+
+```rust src/bucket.rs
+- let old = self.bucket[i];                                       // [!code --]
++ let old = mem::replace(&mut self.bucket[i], Bucket::Empty);     // [!code ++]
+  if let Some(entry) = old.entry() {
+      tombstone(entry);
+  }
+```
+
+The replaced line clones the bucket so the original can be inspected. The clone is fine in cold paths and catastrophic in this one — the `Bucket<E>` is a tagged enum carrying `E`, and `E` is not always cheap to copy.<Sidenote>In my real workload `E` is a 96-byte struct. The copy is six load-store pairs, which dwarfs the actual logic of the line.</Sidenote> The fix is the eternal Rust trick of swapping a known-cheap value in and walking off with the expensive one.
+
+The bench, on the same dataset before and after:
+
+<Terminal>{`$ cargo bench --bench churn
+running 1 test
+test churn ... bench:          38.21 ns/op
+$ git apply replace_swap.patch
+$ cargo bench --bench churn
+running 1 test
+test churn ... bench:          31.04 ns/op`}</Terminal>
+
+About an eighteen-percent win, which is the headline number. Eighteen percent on a single workload that triggered the path heavily; less on anything else. Lopsided wins are a sign you've done something targeted, not something general.
+
+## The state machine
+
+I want to be honest about the shape of what I built. A bucket is in one of three states, and it transitions through them under exactly four operations:
+
+<Mermaid>{`stateDiagram-v2
+  [*] --> Empty
+  Empty --> Occupied : insert
+  Occupied --> Tombstone : remove
+  Tombstone --> Occupied : reinsert
+  Occupied --> Empty : clear/drop
+  Tombstone --> Empty : rehash`}</Mermaid>
+
+The interesting transitions are the two that touch `Tombstone`. The state is necessary because linear probing cannot distinguish "I never had a key here" from "I had one and you removed it" without it. The state is _annoying_ because every probe pays a branch for tombstones it will almost never hit.
+
+## A little math
+
+Under uniform hashing with load factor $\alpha$, the expected number of probes to insert a new key into an open-addressed table is
+
+$$
+\mathbb{E}[\text{probes}] = \tfrac{1}{2}\left(1 + \frac{1}{(1 - \alpha)^2}\right)
+$$
+
+which means at $\alpha = 0.5$ you pay 2.5 probes on average, and at $\alpha = 0.9$ you pay 50.5.<Sidenote>Knuth, _The Art of Computer Programming_, vol. 3, §6.4. Worth a read if you have never had the pleasure.</Sidenote> Tombstones distort $\alpha$ upward without giving you any of the storage value of higher load — they are pure overhead from the cost model's perspective.
+
+My rewrite changes nothing about this analysis. The probe sequence is still linear, the table is still open-addressed, the load factor is still my responsibility. The win is purely in the cost of _individual_ probes, not in their count.
+
+<Callout type="warning">
+Every line in this section's code sample was written behind a `// SAFETY:` comment in the real codebase. I'm eliding them for length. If you copy this verbatim you will have a bad time.
+</Callout>
+
+## The shape, after
+
+```rust src/lib.rs
+pub mod allocator;
+pub mod bucket;
+pub mod probe;
+
+pub use allocator::Allocator;
+```
+
+<FileTabs>
+
+```rust src/allocator.rs
+pub struct Allocator<E> {
+    table: Box<[Bucket<E>]>,
+    mask: usize,
+    len: usize,
+    tombstones: usize,
+}
+
+impl<E: Entry> Allocator<E> {
+    pub fn insert(&mut self, key: E::Key, value: E) -> Option<E> {
+        if self.should_rehash() {
+            self.rehash();
+        }
+        let i = probe::probe(&self.table, self.mask, hash(&key));
+        let old = mem::replace(&mut self.table[i], Bucket::Occupied(value));
+        match old {
+            Bucket::Occupied(e) => Some(e),
+            _ => {
+                self.len += 1;
+                None
+            }
+        }
+    }
+}
+```
+
+```rust src/probe.rs
+#[inline(always)]
+pub(crate) fn probe<E>(
+    table: &[Bucket<E>],
+    mask: usize,
+    hash: u64,
+) -> usize {
+    let mut i = (hash as usize) & mask;
+    while !matches!(table[i], Bucket::Empty) {
+        i = (i + 1) & mask;
+    }
+    i
+}
+```
+
+```rust src/bucket.rs
+#[repr(C)]
+pub(crate) enum Bucket<E> {
+    Empty,
+    Tombstone,
+    Occupied(E),
+}
+```
+
+</FileTabs>
+
+The visible change is in `bucket.rs` and one file you can't see from here — the bench harness. The substance is `mem::replace` instead of `.clone()`. That's it. That's the whole essay's worth of rewriting.
+
+<PullQuote cite="me, halfway through the bench week">
+the only good allocator is the one you do not have to think about
+</PullQuote>
+
+## Why you shouldn't
+
+I want to leave you with the actual cost ledger.
+
+I spent four days on the rewrite. Two of them were writing tests for the existing code so I'd notice if I broke anything. One was the change itself. One was benching it on three workloads to convince myself the win wasn't a fluke.
+
+I will spend, by my estimate, somewhere between four and forty hours over the next year maintaining it. The std `HashMap` will not require any of those hours.
+
+If your bottleneck is, say, IO, or JSON parsing, or your terrible regex, eighteen percent of nothing is nothing. If your bottleneck is the hash table for a workload `HashMap` was already tuned for, you will likely get a smaller win, or none, or a regression, for the same maintenance ledger.
+
+I did this because I wanted to do this. It is the only honest reason. If you have any other one, I suspect you don't have it.
+
+The next part in this series is about probe sequence tuning — which is the part of this work I am _not_ confident about.
