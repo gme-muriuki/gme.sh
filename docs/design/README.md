@@ -14,4 +14,4 @@ Skip docs for mechanical cleanups (rename, lint, dependency bumps). Document any
 ## Index
 
 - [theme-context](./theme-context.md) — lift theme state into React context; sync `meta[name=theme-color]`. *Accepted*
-- [write-ide](./write-ide.md) — `/write` route rebuilt as a 4-pane IDE with CodeMirror + live preview. *Draft*
+- [write-ide](./write-ide.md) — `/write` route rebuilt as a 4-pane IDE with CodeMirror + live preview. *Accepted*
