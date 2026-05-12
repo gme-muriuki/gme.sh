@@ -8,16 +8,29 @@ export function TableOfContents() {
   useEffect(() => {
     const article = document.querySelector('.prose-essay')
     if (!article) return
-    const headings = article.querySelectorAll<HTMLElement>('h2[id], h3[id]')
-    const list: Item[] = []
-    headings.forEach((h) => {
-      list.push({
-        id: h.id,
-        text: h.textContent ?? '',
-        level: h.tagName === 'H2' ? 2 : 3,
+
+    function scan() {
+      if (!article) return
+      const headings = article.querySelectorAll<HTMLElement>('h2[id], h3[id]')
+      const list: Item[] = []
+      headings.forEach((h) => {
+        list.push({
+          id: h.id,
+          text: h.textContent ?? '',
+          level: h.tagName === 'H2' ? 2 : 3,
+        })
       })
+      setItems(list)
+    }
+
+    scan()
+    const observer = new MutationObserver(scan)
+    observer.observe(article, {
+      childList: true,
+      subtree: true,
+      characterData: true,
     })
-    setItems(list)
+    return () => observer.disconnect()
   }, [])
 
   if (items.length === 0) return null

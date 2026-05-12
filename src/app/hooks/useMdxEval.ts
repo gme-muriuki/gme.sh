@@ -5,6 +5,7 @@ import { Fragment, jsx, jsxs } from 'react/jsx-runtime'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+import rehypeSlug from 'rehype-slug'
 import rehypeShiki from '@shikijs/rehype'
 import {
   transformerNotationDiff,
@@ -43,6 +44,7 @@ export function useMdxEval(source: string): EvalState {
           useMDXComponents: () => components,
           remarkPlugins: [remarkGfm, remarkMath],
           rehypePlugins: [
+            rehypeSlug,
             rehypeKatex,
             [
               rehypeShiki,
