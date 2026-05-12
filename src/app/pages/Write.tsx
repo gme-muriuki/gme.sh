@@ -5,8 +5,10 @@ import {
   useDeferredValue,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
+import { format } from 'date-fns'
 import * as Dialog from '@radix-ui/react-dialog'
 import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 import { useMdxEval } from '@/app/hooks/useMdxEval'
@@ -51,6 +53,7 @@ export default function Write() {
   const [recent, setRecent] = useState<
     Array<{ type: PostType; slug: string }>
   >([])
+  const [publishDialog, setPublishDialog] = useState(false)
 
   const parsed = useMemo(() => parseFrontmatter(source), [source])
   const deferredSource = useDeferredValue(source)
@@ -95,14 +98,26 @@ export default function Write() {
     })
   }, [])
 
+  const draftRef = useRef(parsed.frontmatter.draft === true)
+  draftRef.current = parsed.frontmatter.draft === true
+
   const onPublishToggle = useCallback(() => {
+    if (draftRef.current) {
+      setPublishDialog(true)
+      return
+    }
     setSource((s) => {
       const { frontmatter, body } = parseFrontmatter(s)
-      return serializeFrontmatter(
-        { ...frontmatter, draft: !frontmatter.draft },
-        body,
-      )
+      return serializeFrontmatter({ ...frontmatter, draft: true }, body)
     })
+  }, [])
+
+  const onConfirmPublish = useCallback(() => {
+    setSource((s) => {
+      const { frontmatter, body } = parseFrontmatter(s)
+      return serializeFrontmatter({ ...frontmatter, draft: false }, body)
+    })
+    setPublishDialog(false)
   }, [])
 
   const onTogglePanel = useCallback((side: 'left' | 'right') => {
@@ -245,6 +260,54 @@ export default function Write() {
           </Dialog.Portal>
         </Dialog.Root>
       ) : null}
+
+      <Dialog.Root open={publishDialog} onOpenChange={setPublishDialog}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-[var(--ink)]/30 backdrop-blur-[2px]" />
+          <Dialog.Content className="fixed left-1/2 top-[20vh] z-50 -translate-x-1/2 w-[min(480px,92vw)] bg-paper border border-rule rounded shadow-lg p-6">
+            <Dialog.Title className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted mb-3">
+              publish this post?
+            </Dialog.Title>
+            <div className="mb-6 space-y-2">
+              <p className="text-lg font-semibold text-ink leading-tight">
+                {parsed.frontmatter.title ?? 'Untitled'}
+              </p>
+              {parsed.frontmatter.dek ? (
+                <p className="text-sm text-ink-muted leading-snug">
+                  {parsed.frontmatter.dek}
+                </p>
+              ) : null}
+              <p className="font-mono text-[11px] text-ink-faint uppercase tracking-[0.15em]">
+                {parsed.frontmatter.date
+                  ? format(new Date(parsed.frontmatter.date), 'd MMM yyyy')
+                  : '—'}
+              </p>
+            </div>
+            <p className="text-sm text-ink-muted mb-6">
+              Flips <code className="font-mono text-ink">draft: true</code> to{' '}
+              <code className="font-mono text-ink">draft: false</code> in the
+              frontmatter. (No write to disk yet — persistence lands in a
+              later commit.)
+            </p>
+            <div className="flex justify-end gap-3 font-mono text-[11px] uppercase tracking-[0.18em]">
+              <button
+                type="button"
+                onClick={() => setPublishDialog(false)}
+                className="text-ink-muted hover:text-ink px-3 py-1 transition-colors"
+              >
+                cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirmPublish}
+                className="text-brand bg-brand/10 hover:bg-brand/20 rounded px-3 py-1 transition-colors"
+              >
+                publish
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {rightAsDrawer ? (
         <Dialog.Root
