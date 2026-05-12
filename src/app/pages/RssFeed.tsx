@@ -1,17 +1,11 @@
 import { publishedPosts } from '@/app/content-index'
 import type { PostEntry } from '@/app/content-index'
+import { permalink } from '@/app/lib/permalink'
 import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 const SITE_URL = 'https://example.com'
 const SITE_TITLE = 'The Recursion of Learning'
 const SITE_DESCRIPTION = 'Rust, systems, half-baked ideas.'
-
-const pathPrefix = {
-  essay: '/essays',
-  note: '/notes',
-  shipped: '/shipped',
-  page: '/pages',
-} as const
 
 function escapeXml(s: string): string {
   return s
@@ -26,7 +20,7 @@ function generateRss(entries: PostEntry[]): string {
   const items = entries
     .filter((p) => p.type !== 'page')
     .map((p) => {
-      const url = `${SITE_URL}${pathPrefix[p.type]}/${p.slug}`
+      const url = `${SITE_URL}${permalink(p.type, p.slug)}`
       return `    <item>
       <title>${escapeXml(p.frontmatter.title)}</title>
       <link>${url}</link>

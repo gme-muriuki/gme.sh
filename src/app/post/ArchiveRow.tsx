@@ -1,17 +1,11 @@
 import { Link } from 'react-router'
 import { format } from 'date-fns'
 import type { PostEntry } from '@/app/content-index'
+import { permalink } from '@/app/lib/permalink'
 
 type Props = {
   entry: PostEntry
 }
-
-const pathPrefix = {
-  essay: '/essays',
-  note: '/notes',
-  shipped: '/shipped',
-  page: '/pages',
-} as const
 
 const typeShort = {
   essay: 'essay',
@@ -22,7 +16,7 @@ const typeShort = {
 
 export function ArchiveRow({ entry }: Props) {
   const { frontmatter: f, type } = entry
-  const href = `${pathPrefix[type]}/${entry.slug}`
+  const href = permalink(type, entry.slug)
   return (
     <li className="border-b border-rule/60 py-3">
       <Link

@@ -1,5 +1,6 @@
 import { useParams } from 'react-router'
 import { findPost } from '@/app/content-index'
+import { permalink } from '@/app/lib/permalink'
 import { EssayLayout } from '@/app/post/EssayLayout'
 import { NoteLayout } from '@/app/post/NoteLayout'
 import { ShippedLayout } from '@/app/post/ShippedLayout'
@@ -7,12 +8,6 @@ import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 type Props = {
   type: 'essay' | 'note' | 'shipped'
-}
-
-const pathPrefix: Record<Props['type'], string> = {
-  essay: '/essays',
-  note: '/notes',
-  shipped: '/shipped',
 }
 
 export default function PostPage({ type }: Props) {
@@ -30,7 +25,7 @@ export default function PostPage({ type }: Props) {
   }
 
   const { Component, frontmatter } = entry
-  const permalink = `${pathPrefix[type]}/${slug}`
+  const permalinkHref = permalink(type, slug)
 
   if (type === 'essay') {
     return (
@@ -41,7 +36,7 @@ export default function PostPage({ type }: Props) {
         readingTime={frontmatter.readingTime}
         tags={frontmatter.tags}
         series={frontmatter.series}
-        permalink={permalink}
+        permalink={permalinkHref}
       >
         <Component />
       </EssayLayout>
@@ -55,7 +50,7 @@ export default function PostPage({ type }: Props) {
         growth={frontmatter.growth ?? 'seedling'}
         lastTended={frontmatter.lastTended}
         tags={frontmatter.tags}
-        permalink={permalink}
+        permalink={permalinkHref}
       >
         <Component />
       </NoteLayout>
@@ -69,7 +64,7 @@ export default function PostPage({ type }: Props) {
       hero={frontmatter.hero}
       links={frontmatter.links}
       tags={frontmatter.tags}
-      permalink={permalink}
+      permalink={permalinkHref}
     >
       <Component />
     </ShippedLayout>

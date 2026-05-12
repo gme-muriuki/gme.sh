@@ -2,6 +2,7 @@ import { PanelLeft, PanelRight } from 'lucide-react'
 import { SearchTrigger } from '@/app/chrome/SearchTrigger'
 import { SquareMark } from '@/app/chrome/SquareMark'
 import { cn } from '@/app/lib/cn'
+import { sourceFilePath } from '@/app/lib/permalink'
 import type { PostType } from '@/app/content-index'
 
 type Props = {
@@ -15,13 +16,6 @@ type Props = {
   onTogglePanel: (side: 'left' | 'right') => void
 }
 
-const PATH_PREFIX: Record<PostType, string> = {
-  essay: 'essays',
-  note: 'notes',
-  shipped: 'shipped',
-  page: 'pages',
-}
-
 export function Toolbar({
   currentFile,
   isModified,
@@ -33,7 +27,7 @@ export function Toolbar({
   onTogglePanel,
 }: Props) {
   const pathLabel = currentFile
-    ? `${PATH_PREFIX[currentFile.type]}/${currentFile.slug}.mdx`
+    ? sourceFilePath(currentFile.type, currentFile.slug)
     : 'untitled.mdx'
 
   return (

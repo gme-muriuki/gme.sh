@@ -11,6 +11,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { Command } from 'cmdk'
 import { useNavigate } from 'react-router'
 import { publishedPosts } from '@/app/content-index'
+import { permalink } from '@/app/lib/permalink'
 import { SOURCES } from '@/app/write/sources'
 import { useTheme } from '@/app/hooks/useTheme'
 
@@ -27,13 +28,6 @@ const PaletteContext = createContext<PaletteContextValue>({
 export function usePalette(): PaletteContextValue {
   return useContext(PaletteContext)
 }
-
-const pathPrefix = {
-  essay: '/essays',
-  note: '/notes',
-  shipped: '/shipped',
-  page: '',
-} as const
 
 const typeLabels = {
   essay: 'essay',
@@ -101,7 +95,7 @@ function Palette({
             tags: (p.frontmatter.tags ?? []).join(' '),
             body: body.toLowerCase(),
             kicker: typeLabels[p.type],
-            href: `${pathPrefix[p.type]}/${p.slug}`,
+            href: permalink(p.type, p.slug),
           }
         }),
     [],
