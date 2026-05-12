@@ -8,11 +8,11 @@ import {
   useState,
 } from 'react'
 import { format } from 'date-fns'
-import * as Dialog from '@radix-ui/react-dialog'
 import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 import { useMdxEval } from '@/app/hooks/useMdxEval'
 import { useMediaQuery } from '@/app/hooks/useMediaQuery'
 import { cn } from '@/app/lib/cn'
+import { ConfirmDialog, SidePanelDrawer } from '@/app/lib/dialogs'
 import { Toolbar } from '@/app/write/Toolbar'
 import { Sidebar } from '@/app/write/Sidebar'
 import { MetaPanel } from '@/app/write/MetaPanel'
@@ -241,102 +241,71 @@ export default function Write() {
       </div>
 
       {leftAsDrawer ? (
-        <Dialog.Root
+        <SidePanelDrawer
+          side="left"
+          title="Files"
           open={panels.left}
           onOpenChange={(o) => setPanels((p) => ({ ...p, left: o }))}
         >
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--ink)]/30 backdrop-blur-[2px]" />
-            <Dialog.Content
-              onPointerDownOutside={(e) => e.preventDefault()}
-              onInteractOutside={(e) => e.preventDefault()}
-              className="fixed inset-y-0 left-0 z-50 w-[260px] bg-paper border-r border-rule shadow-lg"
-            >
-              <Dialog.Title className="sr-only">Files</Dialog.Title>
-              <Sidebar
-                currentFile={currentFile}
-                recent={recent}
-                onSelect={onSelect}
-                onNew={onNew}
-              />
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
+          <Sidebar
+            currentFile={currentFile}
+            recent={recent}
+            onSelect={onSelect}
+            onNew={onNew}
+          />
+        </SidePanelDrawer>
       ) : null}
 
-      <Dialog.Root open={publishDialog} onOpenChange={setPublishDialog}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-[var(--ink)]/30 backdrop-blur-[2px]" />
-          <Dialog.Content className="fixed left-1/2 top-[20vh] z-50 -translate-x-1/2 w-[min(480px,92vw)] bg-paper border border-rule rounded shadow-lg p-6">
-            <Dialog.Title className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted mb-3">
-              publish this post?
-            </Dialog.Title>
-            <div className="mb-6 space-y-2">
-              <p className="text-lg font-semibold text-ink leading-tight">
-                {parsed.frontmatter.title ?? 'Untitled'}
-              </p>
-              {parsed.frontmatter.dek ? (
-                <p className="text-sm text-ink-muted leading-snug">
-                  {parsed.frontmatter.dek}
-                </p>
-              ) : null}
-              <p className="font-mono text-[11px] text-ink-faint uppercase tracking-[0.15em]">
-                {parsed.frontmatter.date
-                  ? format(new Date(parsed.frontmatter.date), 'd MMM yyyy')
-                  : '—'}
-              </p>
-            </div>
-            <p className="text-sm text-ink-muted mb-6">
-              Flips <code className="font-mono text-ink">draft: true</code> to{' '}
-              <code className="font-mono text-ink">draft: false</code> in the
-              frontmatter. (No write to disk yet — persistence lands in a
-              later commit.)
+      <ConfirmDialog
+        open={publishDialog}
+        onOpenChange={setPublishDialog}
+        title="publish this post?"
+        description={
+          <div className="space-y-2">
+            <p className="text-lg font-semibold text-ink leading-tight">
+              {parsed.frontmatter.title ?? 'Untitled'}
             </p>
-            <div className="flex justify-end gap-3 font-mono text-[11px] uppercase tracking-[0.18em]">
-              <button
-                type="button"
-                onClick={() => setPublishDialog(false)}
-                className="text-ink-muted hover:text-ink px-3 py-1 transition-colors"
-              >
-                cancel
-              </button>
-              <button
-                type="button"
-                onClick={onConfirmPublish}
-                className="text-brand bg-brand/10 hover:bg-brand/20 rounded px-3 py-1 transition-colors"
-              >
-                publish
-              </button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+            {parsed.frontmatter.dek ? (
+              <p className="text-sm text-ink-muted leading-snug">
+                {parsed.frontmatter.dek}
+              </p>
+            ) : null}
+            <p className="font-mono text-[11px] text-ink-faint uppercase tracking-[0.15em]">
+              {parsed.frontmatter.date
+                ? format(new Date(parsed.frontmatter.date), 'd MMM yyyy')
+                : '—'}
+            </p>
+          </div>
+        }
+        note={
+          <>
+            Flips <code className="font-mono text-ink">draft: true</code> to{' '}
+            <code className="font-mono text-ink">draft: false</code> in the
+            frontmatter. (No write to disk yet &mdash; persistence lands in
+            a later commit.)
+          </>
+        }
+        confirmLabel="publish"
+        onConfirm={onConfirmPublish}
+      />
 
       {rightAsDrawer ? (
-        <Dialog.Root
+        <SidePanelDrawer
+          side="right"
+          title="Document"
           open={panels.right}
           onOpenChange={(o) => setPanels((p) => ({ ...p, right: o }))}
         >
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--ink)]/30 backdrop-blur-[2px]" />
-            <Dialog.Content
-              onPointerDownOutside={(e) => e.preventDefault()}
-              onInteractOutside={(e) => e.preventDefault()}
-              className="fixed inset-y-0 right-0 z-50 w-[320px] bg-paper border-l border-rule shadow-lg"
-            >
-              <Dialog.Title className="sr-only">Document</Dialog.Title>
-              <MetaPanel
-                fileKey={fileKey}
-                frontmatter={parsed.frontmatter}
-                type={type}
-                onType={setType}
-                onPatch={onPatch}
-                parseError={parsed.error}
-                rawFrontmatter={rawFm}
-              />
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
+          <MetaPanel
+            fileKey={fileKey}
+            frontmatter={parsed.frontmatter}
+            type={type}
+            onType={setType}
+            onPatch={onPatch}
+            parseError={parsed.error}
+            rawFrontmatter={rawFm}
+          />
+        </SidePanelDrawer>
       ) : null}
     </div>
   )
