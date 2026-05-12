@@ -9,11 +9,12 @@ export function Wordmark({ size = 'md' }: Props) {
   return (
     <Link
       to="/"
-      className={`wordmark ${text} no-underline hover:no-underline text-ink`}
-      aria-label="James Muriuki — home"
+      className={`wordmark ${text} no-underline hover:no-underline text-ink whitespace-nowrap`}
+      aria-label="The Recursion of Learning — home"
     >
-      <span>James </span>
-      <span className="surname">Muriuki</span>
+      <span>The </span>
+      <span className="surname">Recursion</span>
+      <span> of Learning</span>
     </Link>
   )
 }

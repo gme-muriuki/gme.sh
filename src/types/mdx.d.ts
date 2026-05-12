@@ -14,6 +14,8 @@ declare module '*.mdx' {
     draft?: boolean
     hero?: string
     links?: { label: string; href: string }[]
+    ogImage?: string
+    ogDescription?: string
     [key: string]: unknown
   }
 

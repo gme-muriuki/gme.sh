@@ -76,16 +76,25 @@ export function MetaPanel({
           />
         </Field>
         <Field label="status">
-          <select
-            value={f.draft ? 'draft' : 'published'}
-            onChange={(e) =>
-              onPatch({ draft: e.currentTarget.value === 'draft' })
-            }
-            className={inputClass}
-          >
-            <option value="published">published</option>
-            <option value="draft">draft</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className={cn(
+                'size-1.5 rounded-full shrink-0',
+                f.draft ? 'bg-brand' : 'bg-ink-faint',
+              )}
+            />
+            <select
+              value={f.draft ? 'draft' : 'published'}
+              onChange={(e) =>
+                onPatch({ draft: e.currentTarget.value === 'draft' })
+              }
+              className={cn(inputClass, 'flex-1')}
+            >
+              <option value="published">published</option>
+              <option value="draft">draft</option>
+            </select>
+          </div>
         </Field>
         <Field label="reading time (min)">
           <input
@@ -168,6 +177,23 @@ export function MetaPanel({
         series={f.series}
         onCommit={(v) => onPatch({ series: v })}
       />
+
+      <Section title="seo">
+        <Field label="og image">
+          <TextInput
+            defaultValue={f.ogImage ?? ''}
+            placeholder="/og/post.jpg"
+            onCommit={(v) => onPatch({ ogImage: v || undefined })}
+          />
+        </Field>
+        <Field label="og description">
+          <TextInput
+            defaultValue={f.ogDescription ?? ''}
+            placeholder="custom social card description"
+            onCommit={(v) => onPatch({ ogDescription: v || undefined })}
+          />
+        </Field>
+      </Section>
 
       <Section title="frontmatter">
         <pre className="not-prose rounded border border-rule bg-paper p-3 text-[11px] font-mono leading-[1.55] text-ink-muted overflow-x-auto whitespace-pre-wrap">

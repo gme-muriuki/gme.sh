@@ -3,7 +3,7 @@ import type { PostEntry } from '@/app/content-index'
 import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 const SITE_URL = 'https://example.com'
-const SITE_TITLE = 'James Muriuki'
+const SITE_TITLE = 'The Recursion of Learning'
 const SITE_DESCRIPTION = 'Rust, systems, half-baked ideas.'
 
 const pathPrefix = {

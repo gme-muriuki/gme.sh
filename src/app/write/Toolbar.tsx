@@ -1,14 +1,16 @@
-import { Wordmark } from '@/app/chrome/Wordmark'
-import { SquareMark } from '@/app/chrome/SquareMark'
+import { PanelLeft, PanelRight } from 'lucide-react'
 import { SearchTrigger } from '@/app/chrome/SearchTrigger'
+import { SquareMark } from '@/app/chrome/SquareMark'
 import { cn } from '@/app/lib/cn'
 import type { PostType } from '@/app/content-index'
 
 type Props = {
   currentFile: { type: PostType; slug: string } | null
   isModified: boolean
+  isDraft: boolean
   mode: 'edit' | 'preview'
   onModeChange: (m: 'edit' | 'preview') => void
+  onPublishToggle: () => void
   panels: { left: boolean; right: boolean }
   onTogglePanel: (side: 'left' | 'right') => void
 }
@@ -23,8 +25,10 @@ const PATH_PREFIX: Record<PostType, string> = {
 export function Toolbar({
   currentFile,
   isModified,
+  isDraft,
   mode,
   onModeChange,
+  onPublishToggle,
   panels,
   onTogglePanel,
 }: Props) {
@@ -34,8 +38,19 @@ export function Toolbar({
 
   return (
     <div className="flex items-center gap-3 px-4 h-10 border-b border-rule bg-paper shrink-0">
-      <Wordmark size="sm" />
-      <SquareMark className="text-[7px]" />
+      <button
+        type="button"
+        onClick={() => onTogglePanel('left')}
+        aria-pressed={panels.left}
+        aria-label="Toggle files panel"
+        title="Toggle files panel"
+        className={cn(
+          'inline-flex size-7 items-center justify-center rounded transition-colors -ml-1',
+          panels.left ? 'text-ink' : 'text-ink-muted hover:text-ink',
+        )}
+      >
+        <PanelLeft aria-hidden className="size-3.5" />
+      </button>
       <p className="term-status hidden md:flex items-baseline min-w-0 flex-1">
         <span className="prompt">$</span>
         <span className="label">edit</span>
@@ -46,20 +61,22 @@ export function Toolbar({
       </p>
       <div className="ml-auto md:ml-0 flex items-center gap-3">
         <ModeTabs mode={mode} onChange={onModeChange} />
+        <PublishButton draft={isDraft} onClick={onPublishToggle} />
         <div className="flex items-center -mr-1">
           <SearchTrigger />
-          <PanelToggle
-            label="Files"
-            active={panels.left}
-            onClick={() => onTogglePanel('left')}
-            className="lg:hidden"
-          />
-          <PanelToggle
-            label="Doc"
-            active={panels.right}
+          <button
+            type="button"
             onClick={() => onTogglePanel('right')}
-            className="xl:hidden"
-          />
+            aria-pressed={panels.right}
+            aria-label="Toggle document properties panel"
+            title="Toggle document properties panel"
+            className={cn(
+              'inline-flex size-7 items-center justify-center rounded transition-colors',
+              panels.right ? 'text-ink' : 'text-ink-muted hover:text-ink',
+            )}
+          >
+            <PanelRight aria-hidden className="size-3.5" />
+          </button>
         </div>
       </div>
     </div>
@@ -110,29 +127,26 @@ function Tab({
   )
 }
 
-function PanelToggle({
-  label,
-  active,
+function PublishButton({
+  draft,
   onClick,
-  className,
 }: {
-  label: string
-  active: boolean
+  draft: boolean
   onClick: () => void
-  className?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-pressed={active}
+      title={draft ? 'Publish' : 'Mark as draft'}
       className={cn(
-        'inline-flex items-center px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] rounded transition-colors',
-        active ? 'text-ink' : 'text-ink-muted hover:text-ink',
-        className,
+        'font-mono text-[10px] uppercase tracking-[0.18em] px-2 py-1 rounded transition-colors',
+        draft
+          ? 'text-brand hover:bg-brand/10'
+          : 'text-ink-muted hover:text-ink',
       )}
     >
-      {label}
+      {draft ? 'Publish' : 'Mark draft'}
     </button>
   )
 }

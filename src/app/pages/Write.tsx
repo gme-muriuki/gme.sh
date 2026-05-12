@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useDeferredValue,
+  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -37,7 +38,16 @@ export default function Write() {
   const [source, setSource] = useState<string>(() => makeTemplate(INITIAL_TYPE))
   const [type, setType] = useState<PostType>(INITIAL_TYPE)
   const [mode, setMode] = useState<'edit' | 'preview'>('edit')
-  const [panels, setPanels] = useState({ left: false, right: false })
+  const [panels, setPanels] = useState<{ left: boolean; right: boolean }>(
+    () => {
+      if (typeof window === 'undefined') return { left: true, right: true }
+      const w = window.innerWidth
+      return { left: w >= 1024, right: w >= 1280 }
+    },
+  )
+  const [recent, setRecent] = useState<
+    Array<{ type: PostType; slug: string }>
+  >([])
 
   const parsed = useMemo(() => parseFrontmatter(source), [source])
   const deferredSource = useDeferredValue(source)
@@ -61,14 +71,18 @@ export default function Write() {
     setCurrentFile({ type: nextType, slug })
     setSource(raw)
     setType(nextType)
-    setPanels((p) => ({ ...p, left: false }))
+    setRecent((prev) => {
+      const without = prev.filter(
+        (r) => !(r.type === nextType && r.slug === slug),
+      )
+      return [{ type: nextType, slug }, ...without].slice(0, 5)
+    })
   }, [])
 
   const onNew = useCallback((t: PostType) => {
     setCurrentFile(null)
     setType(t)
     setSource(makeTemplate(t))
-    setPanels((p) => ({ ...p, left: false }))
   }, [])
 
   const onPatch = useCallback((patch: Partial<Frontmatter>) => {
@@ -78,9 +92,25 @@ export default function Write() {
     })
   }, [])
 
+  const onPublishToggle = useCallback(() => {
+    setSource((s) => {
+      const { frontmatter, body } = parseFrontmatter(s)
+      return serializeFrontmatter(
+        { ...frontmatter, draft: !frontmatter.draft },
+        body,
+      )
+    })
+  }, [])
+
   const onTogglePanel = useCallback((side: 'left' | 'right') => {
     setPanels((p) => ({ ...p, [side]: !p[side] }))
   }, [])
+
+  // Only mount the drawer Dialogs at widths where the side panel is *not*
+  // already a column. Otherwise Radix's outside-click + ESC handling fires
+  // on the hidden dialogs and collapses both panels at once.
+  const leftAsDrawer = useMediaQuery('(max-width: 1023.98px)')
+  const rightAsDrawer = useMediaQuery('(max-width: 1279.98px)')
 
   const fileKey = currentFile
     ? `${currentFile.type}/${currentFile.slug}`
@@ -92,16 +122,32 @@ export default function Write() {
       <Toolbar
         currentFile={currentFile}
         isModified={isModified}
+        isDraft={parsed.frontmatter.draft === true}
         mode={mode}
         onModeChange={setMode}
+        onPublishToggle={onPublishToggle}
         panels={panels}
         onTogglePanel={onTogglePanel}
       />
 
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[220px_1fr] xl:grid-cols-[220px_1fr_300px]">
-        <div className="hidden lg:block border-r border-rule min-h-0 overflow-hidden">
+      <div
+        className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[var(--lg-cols)] xl:grid-cols-[var(--xl-cols)]"
+        style={
+          {
+            '--lg-cols': panels.left ? '220px 1fr' : '1fr',
+            '--xl-cols': xlCols(panels),
+          } as React.CSSProperties
+        }
+      >
+        <div
+          className={cn(
+            'border-r border-rule min-h-0 overflow-hidden',
+            panels.left ? 'hidden lg:block' : 'hidden',
+          )}
+        >
           <Sidebar
             currentFile={currentFile}
+            recent={recent}
             onSelect={onSelect}
             onNew={onNew}
           />
@@ -149,7 +195,12 @@ export default function Write() {
           </div>
         </div>
 
-        <div className="hidden xl:block border-l border-rule min-h-0 overflow-hidden">
+        <div
+          className={cn(
+            'border-l border-rule min-h-0 overflow-hidden',
+            panels.right ? 'hidden xl:block' : 'hidden',
+          )}
+        >
           <MetaPanel
             fileKey={fileKey}
             frontmatter={parsed.frontmatter}
@@ -162,45 +213,81 @@ export default function Write() {
         </div>
       </div>
 
-      <Dialog.Root
-        open={panels.left}
-        onOpenChange={(o) => setPanels((p) => ({ ...p, left: o }))}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--ink)]/30 backdrop-blur-[2px] lg:hidden" />
-          <Dialog.Content className="fixed inset-y-0 left-0 z-50 w-[260px] bg-paper border-r border-rule shadow-lg lg:hidden">
-            <Dialog.Title className="sr-only">Files</Dialog.Title>
-            <Sidebar
-              currentFile={currentFile}
-              onSelect={onSelect}
-              onNew={onNew}
-            />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      {leftAsDrawer ? (
+        <Dialog.Root
+          open={panels.left}
+          onOpenChange={(o) => setPanels((p) => ({ ...p, left: o }))}
+        >
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--ink)]/30 backdrop-blur-[2px]" />
+            <Dialog.Content
+              onPointerDownOutside={(e) => e.preventDefault()}
+              onInteractOutside={(e) => e.preventDefault()}
+              className="fixed inset-y-0 left-0 z-50 w-[260px] bg-paper border-r border-rule shadow-lg"
+            >
+              <Dialog.Title className="sr-only">Files</Dialog.Title>
+              <Sidebar
+                currentFile={currentFile}
+                recent={recent}
+                onSelect={onSelect}
+                onNew={onNew}
+              />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      ) : null}
 
-      <Dialog.Root
-        open={panels.right}
-        onOpenChange={(o) => setPanels((p) => ({ ...p, right: o }))}
-      >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--ink)]/30 backdrop-blur-[2px] xl:hidden" />
-          <Dialog.Content className="fixed inset-y-0 right-0 z-50 w-[320px] bg-paper border-l border-rule shadow-lg xl:hidden">
-            <Dialog.Title className="sr-only">Document</Dialog.Title>
-            <MetaPanel
-              fileKey={fileKey}
-              frontmatter={parsed.frontmatter}
-              type={type}
-              onType={setType}
-              onPatch={onPatch}
-              parseError={parsed.error}
-              rawFrontmatter={rawFm}
-            />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      {rightAsDrawer ? (
+        <Dialog.Root
+          open={panels.right}
+          onOpenChange={(o) => setPanels((p) => ({ ...p, right: o }))}
+        >
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--ink)]/30 backdrop-blur-[2px]" />
+            <Dialog.Content
+              onPointerDownOutside={(e) => e.preventDefault()}
+              onInteractOutside={(e) => e.preventDefault()}
+              className="fixed inset-y-0 right-0 z-50 w-[320px] bg-paper border-l border-rule shadow-lg"
+            >
+              <Dialog.Title className="sr-only">Document</Dialog.Title>
+              <MetaPanel
+                fileKey={fileKey}
+                frontmatter={parsed.frontmatter}
+                type={type}
+                onType={setType}
+                onPatch={onPatch}
+                parseError={parsed.error}
+                rawFrontmatter={rawFm}
+              />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      ) : null}
     </div>
   )
+}
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia(query).matches
+  })
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const listener = (e: MediaQueryListEvent) => setMatches(e.matches)
+    mq.addEventListener('change', listener)
+    setMatches(mq.matches)
+    return () => mq.removeEventListener('change', listener)
+  }, [query])
+  return matches
+}
+
+function xlCols(p: { left: boolean; right: boolean }): string {
+  const parts: string[] = []
+  if (p.left) parts.push('220px')
+  parts.push('1fr')
+  if (p.right) parts.push('300px')
+  return parts.join(' ')
 }
 
 function extractFrontmatterText(source: string): string {

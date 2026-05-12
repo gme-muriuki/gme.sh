@@ -5,7 +5,7 @@ type Args = {
   description?: string
 }
 
-const BASE_TITLE = 'James Muriuki'
+const BASE_TITLE = 'The Recursion of Learning'
 
 export function useDocumentMeta({ title, description }: Args): void {
   useEffect(() => {
