@@ -3,7 +3,6 @@ import {
   Suspense,
   useCallback,
   useDeferredValue,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -12,6 +11,7 @@ import { format } from 'date-fns'
 import * as Dialog from '@radix-ui/react-dialog'
 import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 import { useMdxEval } from '@/app/hooks/useMdxEval'
+import { useMediaQuery } from '@/app/hooks/useMediaQuery'
 import { cn } from '@/app/lib/cn'
 import { Toolbar } from '@/app/write/Toolbar'
 import { Sidebar } from '@/app/write/Sidebar'
@@ -340,21 +340,6 @@ export default function Write() {
       ) : null}
     </div>
   )
-}
-
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
-    return window.matchMedia(query).matches
-  })
-  useEffect(() => {
-    const mq = window.matchMedia(query)
-    const listener = (e: MediaQueryListEvent) => setMatches(e.matches)
-    mq.addEventListener('change', listener)
-    setMatches(mq.matches)
-    return () => mq.removeEventListener('change', listener)
-  }, [query])
-  return matches
 }
 
 const DEVICE_MAX: Record<'phone' | 'tablet' | 'desktop', number> = {
