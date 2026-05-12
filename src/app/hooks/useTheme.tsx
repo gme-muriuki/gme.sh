@@ -6,6 +6,10 @@ import {
   useState,
 } from 'react'
 import type { ReactNode } from 'react'
+import {
+  THEME_COLOR_DARK,
+  THEME_COLOR_LIGHT,
+} from '@/styles/theme-colors'
 
 export type ThemeMode = 'system' | 'light' | 'dark'
 export type ResolvedTheme = 'light' | 'dark'
@@ -13,10 +17,9 @@ export type ResolvedTheme = 'light' | 'dark'
 const STORAGE_KEY = 'theme'
 const DARK_QUERY = '(prefers-color-scheme: dark)'
 
-// must match the inline no-flash script in index.html
 const THEME_COLOR: Record<ResolvedTheme, string> = {
-  light: '#FAF7F0',
-  dark: '#1A1714',
+  light: THEME_COLOR_LIGHT,
+  dark: THEME_COLOR_DARK,
 }
 
 function readMode(): ThemeMode {
