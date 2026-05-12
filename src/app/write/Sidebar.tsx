@@ -21,29 +21,51 @@ const TYPE_SHORT: Record<PostType, string> = {
   page: 'P',
 }
 
+type SortKey = 'date' | 'title' | 'status'
+
 export function Sidebar({ currentFile, recent, onSelect, onNew }: Props) {
   const [filter, setFilter] = useState('')
+  const [sort, setSort] = useState<SortKey>('date')
 
   const lower = filter.trim().toLowerCase()
   const tagFilter = lower.startsWith('#') ? lower.slice(1) : null
 
   const filtered = useMemo(() => {
-    if (!lower) return allPosts.filter((p) => p.type !== 'page')
-    return allPosts.filter((p) => {
-      if (p.type === 'page') return false
-      if (tagFilter) {
-        return (p.frontmatter.tags ?? []).some((t) =>
-          t.toLowerCase().includes(tagFilter),
-        )
-      }
-      const t = p.frontmatter.title?.toLowerCase() ?? ''
-      if (t.includes(lower)) return true
-      if (p.slug.toLowerCase().includes(lower)) return true
-      return (p.frontmatter.tags ?? []).some((tag) =>
-        tag.toLowerCase().includes(lower),
+    const base = lower
+      ? allPosts.filter((p) => {
+          if (p.type === 'page') return false
+          if (tagFilter) {
+            return (p.frontmatter.tags ?? []).some((t) =>
+              t.toLowerCase().includes(tagFilter),
+            )
+          }
+          const t = p.frontmatter.title?.toLowerCase() ?? ''
+          if (t.includes(lower)) return true
+          if (p.slug.toLowerCase().includes(lower)) return true
+          return (p.frontmatter.tags ?? []).some((tag) =>
+            tag.toLowerCase().includes(lower),
+          )
+        })
+      : allPosts.filter((p) => p.type !== 'page')
+
+    const arr = [...base]
+    if (sort === 'title') {
+      arr.sort((a, b) =>
+        (a.frontmatter.title ?? a.slug).localeCompare(
+          b.frontmatter.title ?? b.slug,
+        ),
       )
-    })
-  }, [lower, tagFilter])
+    } else if (sort === 'status') {
+      arr.sort((a, b) => {
+        const aDraft = a.frontmatter.draft ? 1 : 0
+        const bDraft = b.frontmatter.draft ? 1 : 0
+        if (aDraft !== bDraft) return bDraft - aDraft
+        return a.frontmatter.date > b.frontmatter.date ? -1 : 1
+      })
+    }
+    // sort === 'date' keeps allPosts default order (already desc)
+    return arr
+  }, [lower, tagFilter, sort])
 
   const drafts = useMemo(
     () => allPosts.filter((p) => p.frontmatter.draft === true),
@@ -78,15 +100,34 @@ export function Sidebar({ currentFile, recent, onSelect, onNew }: Props) {
         <Wordmark size="sm" />
       </div>
 
-      <div className="px-3 py-2 border-b border-rule/60 shrink-0 flex items-center gap-2">
-        <Search aria-hidden className="size-3 text-ink-faint shrink-0" />
-        <input
-          type="search"
-          placeholder="filter… (#tag)"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-[12px] text-ink placeholder:text-ink-faint"
-        />
+      <div className="border-b border-rule/60 shrink-0">
+        <div className="px-3 py-2 flex items-center gap-2">
+          <Search aria-hidden className="size-3 text-ink-faint shrink-0" />
+          <input
+            type="search"
+            placeholder="filter… (#tag)"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-[12px] text-ink placeholder:text-ink-faint"
+          />
+        </div>
+        <div className="px-3 pb-2 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.15em]">
+          <span className="text-ink-faint">sort</span>
+          {(['date', 'title', 'status'] as SortKey[]).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setSort(k)}
+              aria-pressed={sort === k}
+              className={cn(
+                'transition-colors',
+                sort === k ? 'nav-active text-ink' : 'text-ink-muted hover:text-ink',
+              )}
+            >
+              {k}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-3 space-y-5">
