@@ -18,6 +18,7 @@ import { Sidebar } from '@/app/write/Sidebar'
 import { MetaPanel } from '@/app/write/MetaPanel'
 import { Preview } from '@/app/write/Preview'
 import { SOURCES } from '@/app/write/sources'
+import { allPosts } from '@/app/content-index'
 import { makeTemplate } from '@/app/write/templates'
 import {
   parseFrontmatter,
@@ -69,6 +70,11 @@ export default function Write() {
   }, [currentFile, source])
 
   const { Component, error, pending } = useMdxEval(deferredParsed.body)
+
+  const linkStats = useMemo(
+    () => validateLinks(parsed.body),
+    [parsed.body],
+  )
 
   const onSelect = useCallback((nextType: PostType, slug: string) => {
     const key = `${nextType}/${slug}`
@@ -188,7 +194,12 @@ export default function Write() {
                 <Editor value={source} onChange={setSource} />
               </Suspense>
             </div>
-            <StatusLine body={parsed.body} pending={pending} error={error} />
+            <StatusLine
+              body={parsed.body}
+              brokenLinks={linkStats.broken}
+              pending={pending}
+              error={error}
+            />
           </div>
 
           <div
@@ -415,10 +426,12 @@ function extractFrontmatterText(source: string): string {
 
 function StatusLine({
   body,
+  brokenLinks,
   pending,
   error,
 }: {
   body: string
+  brokenLinks: number
   pending: boolean
   error: string | null
 }) {
@@ -437,11 +450,63 @@ function StatusLine({
       <span className="value">
         {stats.words.toLocaleString()} words ·{' '}
         {stats.sentences.toLocaleString()} sent ·{' '}
-        {stats.chars.toLocaleString()} chars ·{' '}
+        {stats.chars.toLocaleString()} chars
+        {brokenLinks > 0 ? (
+          <>
+            {' · '}
+            <span className="text-brand" title="broken internal links">
+              {brokenLinks} broken
+            </span>
+          </>
+        ) : null}{' · '}
         <span className={error ? 'text-brand' : ''}>{status}</span>
       </span>
     </div>
   )
+}
+
+const KNOWN_STATIC_ROUTES = new Set([
+  '/',
+  '/archive',
+  '/about',
+  '/uses',
+  '/now',
+  '/projects',
+  '/talks',
+  '/reading',
+  '/essays',
+  '/notes',
+  '/shipped',
+  '/write',
+  '/rss.xml',
+])
+
+const LINK_RE = /\[[^\]]*?\]\(([^)]+)\)/g
+const POST_RE = /^\/(essays|notes|shipped)\/([^/?#]+)/
+
+function validateLinks(body: string): { total: number; broken: number } {
+  let total = 0
+  let broken = 0
+  for (const m of body.matchAll(LINK_RE)) {
+    const raw = m[1]?.trim()
+    if (!raw) continue
+    total++
+    const href = raw.split(/[?#]/)[0] ?? raw
+    if (!href.startsWith('/')) continue
+    if (KNOWN_STATIC_ROUTES.has(href)) continue
+    const postMatch = href.match(POST_RE)
+    if (postMatch) {
+      const kind = postMatch[1] as 'essays' | 'notes' | 'shipped'
+      const slug = postMatch[2]
+      const type =
+        kind === 'essays' ? 'essay' : kind === 'notes' ? 'note' : 'shipped'
+      const exists = allPosts.some((p) => p.type === type && p.slug === slug)
+      if (!exists) broken++
+      continue
+    }
+    broken++
+  }
+  return { total, broken }
 }
 
 function EditorFallback() {
