@@ -38,6 +38,9 @@ export default function Write() {
   const [source, setSource] = useState<string>(() => makeTemplate(INITIAL_TYPE))
   const [type, setType] = useState<PostType>(INITIAL_TYPE)
   const [mode, setMode] = useState<'edit' | 'preview'>('edit')
+  const [device, setDevice] = useState<'phone' | 'tablet' | 'desktop'>(
+    'desktop',
+  )
   const [panels, setPanels] = useState<{ left: boolean; right: boolean }>(
     () => {
       if (typeof window === 'undefined') return { left: true, right: true }
@@ -175,11 +178,17 @@ export default function Write() {
 
           <div
             className={cn(
-              'min-h-0 overflow-y-auto',
-              mode === 'preview' ? 'block' : 'hidden md:block',
+              'min-h-0 overflow-y-auto flex flex-col',
+              mode === 'preview' ? 'block' : 'hidden md:flex',
             )}
           >
-            <div className="chrome-frame py-8">
+            <div className="px-4 py-1.5 flex justify-center border-b border-rule bg-paper sticky top-0 z-10 shrink-0">
+              <DeviceTabs value={device} onChange={setDevice} />
+            </div>
+            <div
+              className="mx-auto py-8 px-6 w-full"
+              style={{ maxWidth: DEVICE_MAX[device] }}
+            >
               {error ? (
                 <PreviewError message={error} />
               ) : Component ? (
@@ -280,6 +289,52 @@ function useMediaQuery(query: string): boolean {
     return () => mq.removeEventListener('change', listener)
   }, [query])
   return matches
+}
+
+const DEVICE_MAX: Record<'phone' | 'tablet' | 'desktop', number> = {
+  phone: 390,
+  tablet: 768,
+  desktop: 1024,
+}
+
+function DeviceTabs({
+  value,
+  onChange,
+}: {
+  value: 'phone' | 'tablet' | 'desktop'
+  onChange: (v: 'phone' | 'tablet' | 'desktop') => void
+}) {
+  const opts: Array<'phone' | 'tablet' | 'desktop'> = [
+    'phone',
+    'tablet',
+    'desktop',
+  ]
+  return (
+    <div className="inline-flex items-baseline gap-2 font-mono text-[10px] uppercase tracking-[0.18em]">
+      {opts.map((opt, i) => (
+        <span key={opt} className="inline-flex items-baseline gap-2">
+          {i > 0 ? (
+            <span aria-hidden className="text-ink-faint">
+              ·
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => onChange(opt)}
+            aria-pressed={value === opt}
+            className={cn(
+              'no-underline transition-opacity',
+              value === opt
+                ? 'nav-active text-ink'
+                : 'text-ink-muted hover:opacity-75',
+            )}
+          >
+            {opt}
+          </button>
+        </span>
+      ))}
+    </div>
+  )
 }
 
 function xlCols(p: { left: boolean; right: boolean }): string {
