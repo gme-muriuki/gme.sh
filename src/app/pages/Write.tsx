@@ -21,8 +21,9 @@ import { SOURCES } from '@/app/write/sources'
 import { allPosts } from '@/app/content-index'
 import { makeTemplate } from '@/app/write/templates'
 import {
+  frontmatterText,
   parseFrontmatter,
-  serializeFrontmatter,
+  patchFrontmatter,
 } from '@/app/write/frontmatter'
 import type { PostType } from '@/app/content-index'
 import type { Frontmatter } from '*.mdx'
@@ -98,10 +99,7 @@ export default function Write() {
   }, [])
 
   const onPatch = useCallback((patch: Partial<Frontmatter>) => {
-    setSource((s) => {
-      const { frontmatter, body } = parseFrontmatter(s)
-      return serializeFrontmatter({ ...frontmatter, ...patch }, body)
-    })
+    setSource((s) => patchFrontmatter(s, patch))
   }, [])
 
   const draftRef = useRef(parsed.frontmatter.draft === true)
@@ -112,17 +110,11 @@ export default function Write() {
       setPublishDialog(true)
       return
     }
-    setSource((s) => {
-      const { frontmatter, body } = parseFrontmatter(s)
-      return serializeFrontmatter({ ...frontmatter, draft: true }, body)
-    })
+    setSource((s) => patchFrontmatter(s, { draft: true }))
   }, [])
 
   const onConfirmPublish = useCallback(() => {
-    setSource((s) => {
-      const { frontmatter, body } = parseFrontmatter(s)
-      return serializeFrontmatter({ ...frontmatter, draft: false }, body)
-    })
+    setSource((s) => patchFrontmatter(s, { draft: false }))
     setPublishDialog(false)
   }, [])
 
@@ -139,7 +131,7 @@ export default function Write() {
   const fileKey = currentFile
     ? `${currentFile.type}/${currentFile.slug}`
     : 'draft'
-  const rawFm = extractFrontmatterText(source)
+  const rawFm = frontmatterText(source)
 
   return (
     <div className="flex flex-col h-screen min-h-0 bg-paper text-ink">
@@ -417,11 +409,6 @@ function xlCols(p: { left: boolean; right: boolean }): string {
   parts.push('1fr')
   if (p.right) parts.push('300px')
   return parts.join(' ')
-}
-
-function extractFrontmatterText(source: string): string {
-  const m = source.match(/^---\r?\n([\s\S]*?)\r?\n---/)
-  return m?.[1] ?? ''
 }
 
 function StatusLine({

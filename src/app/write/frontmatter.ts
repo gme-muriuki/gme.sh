@@ -29,6 +29,28 @@ export function parseFrontmatter(source: string): ParsedFrontmatter {
   }
 }
 
+/**
+ * Apply a patch to the frontmatter block of a source string and return the
+ * new source. Single-call replacement for the parse -> spread -> serialize
+ * idiom. Callers do not need to know the YAML fence shape.
+ */
+export function patchFrontmatter(
+  source: string,
+  patch: Partial<Frontmatter>,
+): string {
+  const { frontmatter, body } = parseFrontmatter(source)
+  return serializeFrontmatter({ ...frontmatter, ...patch }, body)
+}
+
+/**
+ * Return the raw YAML text between the `---` fences of a source string,
+ * empty string if none. Used by the document panel's read-only preview.
+ */
+export function frontmatterText(source: string): string {
+  const m = source.match(FENCE)
+  return m?.[1] ?? ''
+}
+
 export function serializeFrontmatter(
   fm: Partial<Frontmatter>,
   body: string,
