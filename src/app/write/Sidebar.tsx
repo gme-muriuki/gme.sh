@@ -243,6 +243,8 @@ function PostItem({
   onSelect: (type: PostType, slug: string) => void
 }) {
   const title = p.frontmatter.title ?? p.slug
+  const series = p.type === 'essay' ? p.frontmatter.series : undefined
+  const growth = p.type === 'note' ? p.frontmatter.growth : undefined
   return (
     <button
       type="button"
@@ -266,14 +268,35 @@ function PostItem({
       >
         {TYPE_SHORT[p.type]}
       </span>
+      {series ? (
+        <span
+          aria-hidden
+          title={`${series.name} · part ${series.index} of ${series.total}`}
+          className="shrink-0 font-mono text-[9px] text-ink-faint tabular-nums"
+        >
+          {series.index}/{series.total}
+        </span>
+      ) : null}
       <span className="flex-1 min-w-0 truncate text-[12px] leading-tight">
         {title}
       </span>
+      {growth ? (
+        <span
+          aria-hidden
+          title={`growth: ${growth}`}
+          className={cn(
+            'shrink-0 size-1.5 rounded-full',
+            growth === 'seedling' && 'bg-ink-faint',
+            growth === 'growing' && 'bg-brand/60',
+            growth === 'evergreen' && 'bg-brand',
+          )}
+        />
+      ) : null}
       {p.frontmatter.draft ? (
         <span
           aria-hidden
           title="draft"
-          className="shrink-0 size-1.5 rounded-full bg-brand"
+          className="shrink-0 size-1.5 rounded-full bg-brand ring-1 ring-paper"
         />
       ) : null}
     </button>
