@@ -9,8 +9,8 @@ import {
 import type { ReactNode } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Command } from 'cmdk'
+import { useNavigate } from 'react-router'
 import { publishedPosts } from '@/app/content-index'
-import { router } from '@/app/routes'
 
 type PaletteContextValue = {
   open: boolean
@@ -84,6 +84,7 @@ function Palette({
   open: boolean
   setOpen: (v: boolean) => void
 }) {
+  const navigate = useNavigate()
   const postItems = useMemo(
     () =>
       publishedPosts
@@ -102,9 +103,9 @@ function Palette({
   const go = useCallback(
     (href: string) => {
       setOpen(false)
-      void router.navigate(href)
+      void navigate(href)
     },
-    [setOpen],
+    [setOpen, navigate],
   )
 
   return (

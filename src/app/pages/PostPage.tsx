@@ -1,6 +1,5 @@
 import { useParams } from 'react-router'
 import { findPost } from '@/app/content-index'
-import type { PostType } from '@/app/content-index'
 import { EssayLayout } from '@/app/post/EssayLayout'
 import { NoteLayout } from '@/app/post/NoteLayout'
 import { ShippedLayout } from '@/app/post/ShippedLayout'
@@ -18,7 +17,7 @@ const pathPrefix: Record<Props['type'], string> = {
 
 export default function PostPage({ type }: Props) {
   const { slug } = useParams<{ slug: string }>()
-  const entry = slug ? findPost(type as PostType, slug) : undefined
+  const entry = slug ? findPost(type, slug) : undefined
   useDocumentMeta({
     title: entry?.frontmatter.title,
     description: entry?.frontmatter.dek,

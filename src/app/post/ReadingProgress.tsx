@@ -24,8 +24,8 @@ export function ReadingProgress() {
       className="fixed top-0 left-0 right-0 h-[2px] bg-rule z-50 pointer-events-none"
     >
       <div
-        className="h-full bg-brand transition-[width] duration-[80ms]"
-        style={{ width: `${pct}%` }}
+        className="h-full w-full bg-brand origin-left transition-transform duration-[80ms]"
+        style={{ transform: `scaleX(${pct / 100})` }}
       />
     </div>
   )

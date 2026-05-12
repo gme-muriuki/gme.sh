@@ -12,14 +12,14 @@ export function Footer() {
           <span className="font-mono">@gme</span>
           <SquareMark className="text-[7px] mx-0.5" />
           <a
-            href="mailto:hello@example.com"
+            href="mailto:hello@gme.sh"
             className="hover:text-ink no-underline hover:no-underline transition-colors"
           >
             email
           </a>
           <SquareMark className="text-[7px] mx-0.5" />
           <a
-            href="https://github.com/"
+            href="https://github.com/gme"
             target="_blank"
             rel="noreferrer"
             className="hover:text-ink no-underline hover:no-underline transition-colors"
