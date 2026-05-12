@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { EditorState } from '@codemirror/state'
+import { EditorSelection, EditorState } from '@codemirror/state'
 import {
   EditorView,
   lineNumbers,
@@ -15,6 +15,48 @@ import {
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
+
+function wrap(prefix: string, suffix: string = prefix) {
+  return (view: EditorView): boolean => {
+    view.dispatch(
+      view.state.changeByRange((range) => {
+        const text = view.state.sliceDoc(range.from, range.to)
+        const insert = prefix + text + suffix
+        const inner = range.from + prefix.length
+        return {
+          changes: { from: range.from, to: range.to, insert },
+          range: EditorSelection.range(inner, inner + text.length),
+        }
+      }),
+    )
+    view.focus()
+    return true
+  }
+}
+
+function wrapLink(view: EditorView): boolean {
+  view.dispatch(
+    view.state.changeByRange((range) => {
+      const sel = view.state.sliceDoc(range.from, range.to)
+      const text = sel || 'text'
+      const insert = `[${text}](url)`
+      const urlStart = range.from + 1 + text.length + 2
+      return {
+        changes: { from: range.from, to: range.to, insert },
+        range: EditorSelection.range(urlStart, urlStart + 3),
+      }
+    }),
+  )
+  view.focus()
+  return true
+}
+
+const mdShortcuts = keymap.of([
+  { key: 'Mod-b', run: wrap('**') },
+  { key: 'Mod-i', run: wrap('*') },
+  { key: 'Mod-e', run: wrap('`') },
+  { key: 'Mod-l', run: wrapLink },
+])
 
 type Props = {
   value: string
@@ -93,6 +135,7 @@ export default function Editor({ value, onChange }: Props) {
         highlightActiveLine(),
         markdown(),
         syntaxHighlighting(highlightStyle),
+        mdShortcuts,
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         theme,
         EditorView.lineWrapping,
