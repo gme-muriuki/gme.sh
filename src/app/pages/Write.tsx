@@ -170,7 +170,7 @@ export default function Write() {
                 <Editor value={source} onChange={setSource} />
               </Suspense>
             </div>
-            <StatusLine source={source} pending={pending} error={error} />
+            <StatusLine body={parsed.body} pending={pending} error={error} />
           </div>
 
           <div
@@ -296,24 +296,30 @@ function extractFrontmatterText(source: string): string {
 }
 
 function StatusLine({
-  source,
+  body,
   pending,
   error,
 }: {
-  source: string
+  body: string
   pending: boolean
   error: string | null
 }) {
-  const chars = source.length
-  const words = useMemo(
-    () => source.trim().split(/\s+/).filter(Boolean).length,
-    [source],
-  )
+  const stats = useMemo(() => {
+    const trimmed = body.trim()
+    if (trimmed === '') return { chars: 0, words: 0, sentences: 0 }
+    const words = trimmed.split(/\s+/).filter(Boolean).length
+    const sentences = trimmed
+      .split(/[.!?]+/)
+      .filter((s) => s.trim() !== '').length
+    return { chars: body.length, words, sentences }
+  }, [body])
   const status = error ? 'error' : pending ? 'compiling…' : 'live'
   return (
     <div className="term-status px-4 py-1.5 border-t border-rule shrink-0">
       <span className="value">
-        {chars.toLocaleString()} chars · {words.toLocaleString()} words ·{' '}
+        {stats.words.toLocaleString()} words ·{' '}
+        {stats.sentences.toLocaleString()} sent ·{' '}
+        {stats.chars.toLocaleString()} chars ·{' '}
         <span className={error ? 'text-brand' : ''}>{status}</span>
       </span>
     </div>
