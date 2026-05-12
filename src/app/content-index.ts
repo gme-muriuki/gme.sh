@@ -29,7 +29,12 @@ const pageMods = import.meta.glob<Mod>('@/content/pages/*.mdx', {
   eager: true,
 })
 
-function slugFromPath(path: string): string {
+/**
+ * Extract the slug from an MDX file path (e.g. `/content/essays/foo.mdx`
+ * -> `foo`). Falls back to the path itself if the regex doesn't match;
+ * in practice every entry produced by `import.meta.glob('...mdx')` does.
+ */
+export function slugFromPath(path: string): string {
   return path.match(/\/([^/]+)\.mdx$/)?.[1] ?? path
 }
 

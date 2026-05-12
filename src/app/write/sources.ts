@@ -1,4 +1,4 @@
-import type { PostType } from '@/app/content-index'
+import { slugFromPath, type PostType } from '@/app/content-index'
 
 const essayRaw = import.meta.glob<string>('@/content/essays/*.mdx', {
   query: '?raw',
@@ -20,10 +20,6 @@ const pageRaw = import.meta.glob<string>('@/content/pages/*.mdx', {
   import: 'default',
   eager: true,
 })
-
-function slugFromPath(p: string): string {
-  return p.match(/\/([^/]+)\.mdx$/)?.[1] ?? p
-}
 
 function build(mods: Record<string, string>, type: PostType): Record<string, string> {
   const out: Record<string, string> = {}
