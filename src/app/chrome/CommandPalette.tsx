@@ -11,6 +11,8 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { Command } from 'cmdk'
 import { useNavigate } from 'react-router'
 import { publishedPosts } from '@/app/content-index'
+import { SOURCES } from '@/app/write/sources'
+import { useTheme } from '@/app/hooks/useTheme'
 
 type PaletteContextValue = {
   open: boolean
@@ -85,18 +87,23 @@ function Palette({
   setOpen: (v: boolean) => void
 }) {
   const navigate = useNavigate()
+  const { resolved, toggle } = useTheme()
   const postItems = useMemo(
     () =>
       publishedPosts
         .filter((p) => p.type !== 'page')
-        .map((p) => ({
-          key: `${p.type}-${p.slug}`,
-          title: p.frontmatter.title,
-          dek: p.frontmatter.dek ?? '',
-          tags: (p.frontmatter.tags ?? []).join(' '),
-          kicker: typeLabels[p.type],
-          href: `${pathPrefix[p.type]}/${p.slug}`,
-        })),
+        .map((p) => {
+          const body = SOURCES[`${p.type}/${p.slug}`] ?? ''
+          return {
+            key: `${p.type}-${p.slug}`,
+            title: p.frontmatter.title,
+            dek: p.frontmatter.dek ?? '',
+            tags: (p.frontmatter.tags ?? []).join(' '),
+            body: body.toLowerCase(),
+            kicker: typeLabels[p.type],
+            href: `${pathPrefix[p.type]}/${p.slug}`,
+          }
+        }),
     [],
   )
 
@@ -129,6 +136,36 @@ function Palette({
               <Command.Empty className="px-3 py-6 text-sm text-ink-faint italic">
                 Nothing matched.
               </Command.Empty>
+              <Command.Group
+                heading="Actions"
+                className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.18em] [&_[cmdk-group-heading]]:text-ink-muted"
+              >
+                <Command.Item
+                  value={`toggle theme ${resolved === 'dark' ? 'light' : 'dark'} mode color scheme`}
+                  onSelect={() => {
+                    toggle()
+                    setOpen(false)
+                  }}
+                  className="flex items-baseline gap-3 rounded px-3 py-2 cursor-pointer aria-selected:bg-paper-raised"
+                >
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint shrink-0 w-14">
+                    action
+                  </span>
+                  <span className="flex-1 text-ink">
+                    Switch to {resolved === 'dark' ? 'light' : 'dark'} mode
+                  </span>
+                </Command.Item>
+                <Command.Item
+                  value="open write editor /write new draft"
+                  onSelect={() => go('/write')}
+                  className="flex items-baseline gap-3 rounded px-3 py-2 cursor-pointer aria-selected:bg-paper-raised"
+                >
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint shrink-0 w-14">
+                    action
+                  </span>
+                  <span className="flex-1 text-ink">Open /write editor</span>
+                </Command.Item>
+              </Command.Group>
               {postItems.length > 0 ? (
                 <Command.Group
                   heading="Posts"
@@ -137,7 +174,7 @@ function Palette({
                   {postItems.map((it) => (
                     <Command.Item
                       key={it.key}
-                      value={`${it.title} ${it.dek} ${it.tags}`}
+                      value={`${it.title} ${it.dek} ${it.tags} ${it.body}`}
                       onSelect={() => go(it.href)}
                       className="flex items-baseline gap-3 rounded px-3 py-2 cursor-pointer aria-selected:bg-paper-raised"
                     >
