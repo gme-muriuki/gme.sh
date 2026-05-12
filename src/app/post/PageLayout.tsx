@@ -1,10 +1,13 @@
-import type { PostEntry } from '@/app/content-index'
+import type { ReactNode } from 'react'
+import type { PageFrontmatter } from '*.mdx'
 import { IndexHeader } from '@/app/chrome/IndexHeader'
 
-type Props = { entry: PostEntry }
+type Props = {
+  frontmatter: PageFrontmatter
+  children: ReactNode
+}
 
-export function PageLayout({ entry }: Props) {
-  const { Component, frontmatter: f } = entry
+export function PageLayout({ frontmatter: f, children }: Props) {
   return (
     <article>
       <IndexHeader
@@ -12,9 +15,7 @@ export function PageLayout({ entry }: Props) {
         title={f.title}
         dek={f.dek}
       />
-      <div className="prose-essay">
-        <Component />
-      </div>
+      <div className="prose-essay">{children}</div>
     </article>
   )
 }

@@ -1,9 +1,7 @@
 import { useParams } from 'react-router'
 import { findPost } from '@/app/content-index'
 import { permalink } from '@/app/lib/permalink'
-import { EssayLayout } from '@/app/post/EssayLayout'
-import { NoteLayout } from '@/app/post/NoteLayout'
-import { ShippedLayout } from '@/app/post/ShippedLayout'
+import { PostLayout } from '@/app/post/PostLayout'
 import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 type Props = {
@@ -17,57 +15,15 @@ export default function PostPage({ type }: Props) {
     title: entry?.frontmatter.title,
     description: entry?.frontmatter.dek,
   })
-  if (!slug) {
-    return <NotHere type={type} slug="" />
-  }
-  if (!entry) {
-    return <NotHere type={type} slug={slug} />
+  if (!slug || !entry) {
+    return <NotHere type={type} slug={slug ?? ''} />
   }
 
   const { Component, frontmatter } = entry
-  const permalinkHref = permalink(type, slug)
-
-  if (type === 'essay') {
-    return (
-      <EssayLayout
-        title={frontmatter.title}
-        dek={frontmatter.dek}
-        date={frontmatter.date}
-        readingTime={frontmatter.readingTime}
-        tags={frontmatter.tags}
-        series={frontmatter.series}
-        permalink={permalinkHref}
-      >
-        <Component />
-      </EssayLayout>
-    )
-  }
-  if (type === 'note') {
-    return (
-      <NoteLayout
-        title={frontmatter.title}
-        date={frontmatter.date}
-        growth={frontmatter.growth ?? 'seedling'}
-        lastTended={frontmatter.lastTended}
-        tags={frontmatter.tags}
-        permalink={permalinkHref}
-      >
-        <Component />
-      </NoteLayout>
-    )
-  }
   return (
-    <ShippedLayout
-      title={frontmatter.title}
-      dek={frontmatter.dek}
-      date={frontmatter.date}
-      hero={frontmatter.hero}
-      links={frontmatter.links}
-      tags={frontmatter.tags}
-      permalink={permalinkHref}
-    >
+    <PostLayout frontmatter={frontmatter} permalink={permalink(type, slug)}>
       <Component />
-    </ShippedLayout>
+    </PostLayout>
   )
 }
 

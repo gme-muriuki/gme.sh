@@ -1,10 +1,10 @@
 import yaml from 'js-yaml'
-import type { Frontmatter } from '*.mdx'
+import type { RawMdxFrontmatter } from '*.mdx'
 
 const FENCE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/
 
 export type ParsedFrontmatter = {
-  frontmatter: Partial<Frontmatter>
+  frontmatter: Partial<RawMdxFrontmatter>
   body: string
   error: string | null
 }
@@ -17,7 +17,7 @@ export function parseFrontmatter(source: string): ParsedFrontmatter {
     const loaded = yaml.load(yamlText) ?? {}
     const fm =
       typeof loaded === 'object' && !Array.isArray(loaded)
-        ? (loaded as Partial<Frontmatter>)
+        ? (loaded as Partial<RawMdxFrontmatter>)
         : {}
     return { frontmatter: fm, body: source.slice(m[0].length), error: null }
   } catch (e) {
@@ -36,7 +36,7 @@ export function parseFrontmatter(source: string): ParsedFrontmatter {
  */
 export function patchFrontmatter(
   source: string,
-  patch: Partial<Frontmatter>,
+  patch: Partial<RawMdxFrontmatter>,
 ): string {
   const { frontmatter, body } = parseFrontmatter(source)
   return serializeFrontmatter({ ...frontmatter, ...patch }, body)
@@ -52,7 +52,7 @@ export function frontmatterText(source: string): string {
 }
 
 export function serializeFrontmatter(
-  fm: Partial<Frontmatter>,
+  fm: Partial<RawMdxFrontmatter>,
   body: string,
 ): string {
   const cleaned = Object.fromEntries(

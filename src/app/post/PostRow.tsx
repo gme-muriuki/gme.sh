@@ -28,7 +28,7 @@ export function PostRow({ entry }: Props) {
             ·
           </span>
           <span>{labels[type]}</span>
-          {typeof f.readingTime === 'number' ? (
+          {f.type === 'essay' && typeof f.readingTime === 'number' ? (
             <>
               <span aria-hidden className="text-ink-faint">
                 ·
@@ -36,7 +36,7 @@ export function PostRow({ entry }: Props) {
               <span>{f.readingTime} min</span>
             </>
           ) : null}
-          {f.growth ? (
+          {f.type === 'note' && f.growth ? (
             <>
               <span aria-hidden className="text-ink-faint">
                 ·

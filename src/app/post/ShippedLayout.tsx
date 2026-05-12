@@ -1,31 +1,20 @@
 import type { ReactNode } from 'react'
 import { format } from 'date-fns'
+import type { ShippedFrontmatter } from '*.mdx'
 import { Tags } from './Tags'
 
-type ShipLink = { label: string; href: string }
-
 type Props = {
-  title: string
-  dek?: string
-  date: string
-  hero?: string
-  links?: ShipLink[]
-  tags?: string[]
+  frontmatter: ShippedFrontmatter
   permalink: string
   children: ReactNode
 }
 
 export function ShippedLayout({
-  title,
-  dek,
-  date,
-  hero,
-  links,
-  tags,
+  frontmatter: f,
   permalink,
   children,
 }: Props) {
-  const parsed = new Date(date)
+  const parsed = new Date(f.date)
   return (
     <article>
       <header className="mb-12">
@@ -36,23 +25,23 @@ export function ShippedLayout({
           {format(parsed, 'd MMM yyyy')}
         </p>
         <h1 className="mt-5 text-[2.875rem] font-bold tracking-tighter leading-[0.98] text-ink max-w-[20ch]">
-          {title}
+          {f.title}
         </h1>
-        {dek ? (
+        {f.dek ? (
           <p className="mt-5 max-w-[52ch] text-[1.125rem] text-ink-muted leading-snug">
-            {dek}
+            {f.dek}
           </p>
         ) : null}
-        {hero ? (
+        {f.hero ? (
           <img
-            src={hero}
+            src={f.hero}
             alt=""
             className="mt-8 rounded border border-rule w-full"
           />
         ) : null}
-        {links && links.length > 0 ? (
+        {f.links && f.links.length > 0 ? (
           <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 font-mono text-sm">
-            {links.map((link) => (
+            {f.links.map((link) => (
               <li key={link.href}>
                 <a
                   href={link.href}
@@ -69,7 +58,7 @@ export function ShippedLayout({
       </header>
       <div className="prose-essay">{children}</div>
       <footer className="mt-16 border-t border-rule pt-6">
-        <Tags tags={tags} />
+        <Tags tags={f.tags} />
         <p className="mt-3 font-mono text-[11px] text-ink-faint">
           permalink &mdash;{' '}
           <a

@@ -1,15 +1,15 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import type { Frontmatter } from '*.mdx'
+import type { RawMdxFrontmatter } from '*.mdx'
 import type { PostType } from '@/app/content-index'
 import { SquareMark } from '@/app/chrome/SquareMark'
 import { cn } from '@/app/lib/cn'
 
-type FmPatch = Partial<Frontmatter>
+type FmPatch = Partial<RawMdxFrontmatter>
 
 type Props = {
   fileKey: string
-  frontmatter: Partial<Frontmatter>
+  frontmatter: Partial<RawMdxFrontmatter>
   type: PostType
   onType: (t: PostType) => void
   onPatch: (patch: FmPatch) => void
@@ -130,7 +130,7 @@ export function MetaPanel({
               value={f.growth ?? 'seedling'}
               onChange={(e) =>
                 onPatch({
-                  growth: e.currentTarget.value as Frontmatter['growth'],
+                  growth: e.currentTarget.value as RawMdxFrontmatter['growth'],
                 })
               }
               className={inputClass}
@@ -380,8 +380,8 @@ function SeriesSection({
   series,
   onCommit,
 }: {
-  series: Frontmatter['series'] | undefined
-  onCommit: (v: Frontmatter['series'] | undefined) => void
+  series: RawMdxFrontmatter['series'] | undefined
+  onCommit: (v: RawMdxFrontmatter['series'] | undefined) => void
 }) {
   const has = series != null
   return (

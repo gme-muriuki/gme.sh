@@ -243,8 +243,10 @@ function PostItem({
   onSelect: (type: PostType, slug: string) => void
 }) {
   const title = p.frontmatter.title ?? p.slug
-  const series = p.type === 'essay' ? p.frontmatter.series : undefined
-  const growth = p.type === 'note' ? p.frontmatter.growth : undefined
+  const series =
+    p.frontmatter.type === 'essay' ? p.frontmatter.series : undefined
+  const growth =
+    p.frontmatter.type === 'note' ? p.frontmatter.growth : undefined
   return (
     <button
       type="button"

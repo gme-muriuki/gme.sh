@@ -26,7 +26,7 @@ import {
   patchFrontmatter,
 } from '@/app/write/frontmatter'
 import type { PostType } from '@/app/content-index'
-import type { Frontmatter } from '*.mdx'
+import type { RawMdxFrontmatter } from '*.mdx'
 
 const Editor = lazy(() => import('@/app/write/Editor'))
 
@@ -98,7 +98,7 @@ export default function Write() {
     setSource(makeTemplate(t))
   }, [])
 
-  const onPatch = useCallback((patch: Partial<Frontmatter>) => {
+  const onPatch = useCallback((patch: Partial<RawMdxFrontmatter>) => {
     setSource((s) => patchFrontmatter(s, patch))
   }, [])
 

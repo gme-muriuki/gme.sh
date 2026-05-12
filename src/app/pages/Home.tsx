@@ -97,7 +97,7 @@ function FeatureTease({ essay }: { essay: PostEntry }) {
         <time dateTime={f.date}>
           {format(new Date(f.date), 'd MMM yyyy')}
         </time>
-        {typeof f.readingTime === 'number' ? (
+        {f.type === 'essay' && typeof f.readingTime === 'number' ? (
           <>
             <span aria-hidden className="text-ink-faint">
               ·

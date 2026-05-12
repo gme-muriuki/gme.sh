@@ -1,42 +1,26 @@
 import type { ReactNode } from 'react'
+import type { NoteFrontmatter } from '*.mdx'
 import { PostMeta } from './PostMeta'
 import { Tags } from './Tags'
 
 type Props = {
-  title: string
-  date: string
-  growth: 'seedling' | 'growing' | 'evergreen'
-  lastTended?: string
-  tags?: string[]
+  frontmatter: NoteFrontmatter
   permalink: string
   children: ReactNode
 }
 
-export function NoteLayout({
-  title,
-  date,
-  growth,
-  lastTended,
-  tags,
-  permalink,
-  children,
-}: Props) {
+export function NoteLayout({ frontmatter: f, permalink, children }: Props) {
   return (
     <article>
       <header className="mb-8">
-        <PostMeta
-          type="note"
-          date={date}
-          growth={growth}
-          lastTended={lastTended}
-        />
+        <PostMeta frontmatter={f} />
         <h1 className="mt-4 text-[2.25rem] font-semibold tracking-tight leading-[1.02] text-ink max-w-[22ch]">
-          {title}
+          {f.title}
         </h1>
       </header>
       <div className="prose-essay">{children}</div>
       <footer className="mt-12 border-t border-rule pt-6">
-        <Tags tags={tags} />
+        <Tags tags={f.tags} />
         <p className="mt-3 font-mono text-[11px] text-ink-faint">
           permalink &mdash;{' '}
           <a
