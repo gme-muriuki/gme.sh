@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTheme } from '@/app/hooks/useTheme'
 
 type Props = {
   children: string
@@ -25,16 +26,17 @@ const darkVars = {
 }
 
 export function Mermaid({ children }: Props) {
+  const { resolved } = useTheme()
   const [svg, setSvg] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
+    const isDark = resolved === 'dark'
 
     const render = async (): Promise<void> => {
       try {
         const { default: mermaid } = await import('mermaid')
-        const isDark = document.documentElement.classList.contains('dark')
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: 'strict',
@@ -53,21 +55,11 @@ export function Mermaid({ children }: Props) {
       }
     }
 
-    render()
-
-    const obs = new MutationObserver(() => {
-      void render()
-    })
-    obs.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    })
-
+    void render()
     return () => {
       cancelled = true
-      obs.disconnect()
     }
-  }, [children])
+  }, [children, resolved])
 
   if (error) {
     return (

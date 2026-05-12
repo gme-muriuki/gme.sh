@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>James Muriuki</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#FAF7F0" />
     <script>
-      // no-flash theme init — runs before stylesheets paint
+      // no-flash theme init — runs before stylesheets paint.
+      // theme-color values must match THEME_COLOR in src/app/hooks/useTheme.tsx
       (function () {
         try {
           var stored = localStorage.getItem('theme');
@@ -17,6 +19,8 @@
           var root = document.documentElement;
           if (dark) root.classList.add('dark');
           root.style.colorScheme = dark ? 'dark' : 'light';
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.content = dark ? '#1A1714' : '#FAF7F0';
         } catch (_) {}
       })();
     </script>
