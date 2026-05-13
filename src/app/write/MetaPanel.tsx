@@ -283,8 +283,11 @@ function HistorySection({
   )
 }
 
+// Borders sleep until the value is being interacted with. An ink-coloured
+// value reads as a settled fact; the form affordance only shows up when
+// you reach for it.
 const inputClass =
-  'w-full bg-transparent border-b border-rule focus:border-ink focus:outline-none py-1 text-[13px] text-ink placeholder:text-ink-faint'
+  'w-full bg-transparent border-b border-transparent hover:border-rule focus:border-ink focus:outline-none py-0.5 text-[13px] text-ink placeholder:text-ink-faint transition-colors'
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
@@ -302,12 +305,12 @@ function Section({
   children: ReactNode
 }) {
   return (
-    <section className="mb-6">
-      <p className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted">
+    <section className="mb-8">
+      <p className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted">
         <SquareMark className="text-[6px]" />
         {title}
       </p>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-4">{children}</div>
     </section>
   )
 }
@@ -321,7 +324,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block mb-0.5 font-mono text-[10px] uppercase tracking-[0.15em] text-ink-faint">
+      <span className="block mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
         {label}
       </span>
       {children}
@@ -359,22 +362,28 @@ function Segmented<T extends string>({
   onChange: (v: T) => void
 }) {
   return (
-    <div className="inline-flex flex-wrap rounded border border-rule overflow-hidden">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          aria-pressed={opt.value === value}
-          className={cn(
-            'px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors border-r border-rule last:border-r-0',
-            opt.value === value
-              ? 'bg-paper-raised text-ink'
-              : 'text-ink-muted hover:text-ink',
-          )}
-        >
-          {opt.label}
-        </button>
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-[11px] uppercase tracking-[0.18em]">
+      {options.map((opt, i) => (
+        <span key={opt.value} className="inline-flex items-baseline gap-3">
+          {i > 0 ? (
+            <span aria-hidden className="text-ink-faint">
+              ·
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => onChange(opt.value)}
+            aria-pressed={opt.value === value}
+            className={cn(
+              'transition-colors',
+              opt.value === value
+                ? 'nav-active text-ink'
+                : 'text-ink-faint hover:text-ink',
+            )}
+          >
+            {opt.label}
+          </button>
+        </span>
       ))}
     </div>
   )
@@ -438,9 +447,9 @@ function LinksRepeater({
             type="button"
             onClick={() => commit(rows.filter((_, j) => j !== i))}
             aria-label="remove link"
-            className="text-ink-faint hover:text-brand text-sm leading-none px-1"
+            className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint hover:text-brand px-1 transition-colors"
           >
-            −
+            remove
           </button>
         </div>
       ))}
