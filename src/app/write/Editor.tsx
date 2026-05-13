@@ -1,11 +1,17 @@
 import { useEffect, useRef } from 'react'
-import { EditorSelection, EditorState } from '@codemirror/state'
 import {
+  EditorSelection,
+  EditorState,
+  RangeSetBuilder,
+} from '@codemirror/state'
+import {
+  Decoration,
   EditorView,
-  lineNumbers,
-  highlightActiveLine,
+  ViewPlugin,
   keymap,
+  lineNumbers,
 } from '@codemirror/view'
+import type { DecorationSet, ViewUpdate } from '@codemirror/view'
 import {
   defaultKeymap,
   history,
@@ -58,6 +64,43 @@ const mdShortcuts = keymap.of([
   { key: 'Mod-l', run: wrapLink },
 ])
 
+// Custom focus-line decoration: a `cm-focusLine` class on the active
+// line and `cm-focusLineGutter` on its gutter, so CSS owns the visual.
+// Replaces CodeMirror's stock `highlightActiveLine`, which paints a
+// full-width tint that reads as IDE rather than writing surface.
+const lineMark = Decoration.line({ attributes: { class: 'cm-focusLine' } })
+const gutterMark = Decoration.line({
+  attributes: { class: 'cm-focusLineGutter' },
+})
+
+const focusLine = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet
+    constructor(view: EditorView) {
+      this.decorations = this.build(view)
+    }
+    update(u: ViewUpdate) {
+      if (u.docChanged || u.selectionSet || u.viewportChanged) {
+        this.decorations = this.build(u.view)
+      }
+    }
+    build(view: EditorView): DecorationSet {
+      const b = new RangeSetBuilder<Decoration>()
+      const seen = new Set<number>()
+      for (const r of view.state.selection.ranges) {
+        if (!r.empty) continue
+        const line = view.state.doc.lineAt(r.head)
+        if (seen.has(line.from)) continue
+        seen.add(line.from)
+        b.add(line.from, line.from, lineMark)
+        b.add(line.from, line.from, gutterMark)
+      }
+      return b.finish()
+    }
+  },
+  { decorations: (v) => v.decorations },
+)
+
 type Props = {
   value: string
   onChange: (v: string) => void
@@ -103,6 +146,21 @@ const theme = EditorView.theme({
     padding: '12px 0',
     caretColor: 'var(--brand)',
   },
+  '.cm-line': {
+    paddingLeft: '14px',
+    position: 'relative',
+  },
+  // Subtle left rail on the focused line — no block tint, no IDE feel.
+  '.cm-line.cm-focusLine::before': {
+    content: '""',
+    position: 'absolute',
+    left: '0',
+    top: '0',
+    bottom: '0',
+    width: '2px',
+    backgroundColor: 'var(--brand)',
+    opacity: '0.55',
+  },
   '.cm-gutters': {
     backgroundColor: 'transparent',
     color: 'var(--ink-faint)',
@@ -111,9 +169,7 @@ const theme = EditorView.theme({
     paddingRight: '12px',
     fontSize: '11px',
   },
-  '.cm-activeLine': { backgroundColor: 'var(--code-tint)' },
-  '.cm-activeLineGutter': {
-    backgroundColor: 'transparent',
+  '.cm-focusLineGutter': {
     color: 'var(--ink-muted)',
   },
   '.cm-selectionBackground, ::selection': {
@@ -193,7 +249,7 @@ export default function Editor({ value, onChange, onImageUpload }: Props) {
       extensions: [
         lineNumbers(),
         history(),
-        highlightActiveLine(),
+        focusLine,
         markdown(),
         syntaxHighlighting(highlightStyle),
         mdShortcuts,
