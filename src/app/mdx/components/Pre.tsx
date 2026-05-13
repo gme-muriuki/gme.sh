@@ -29,27 +29,21 @@ export function Pre(props: PreProps) {
   }
 
   const { className, children, ...rest } = props
-  const preClassName = [
-    className,
-    showHeader ? '!rounded-t-none !border-t-0' : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
 
   return (
-    <figure className="my-6 not-prose group">
+    <figure className="my-8 not-prose group">
       {showHeader ? (
-        <div className="flex items-baseline justify-between border border-rule border-b-0 rounded-t bg-paper-raised px-3.5 py-1.5 text-[11px] font-mono">
+        <figcaption className="flex items-baseline justify-between gap-4 mb-1.5 text-[11px] font-mono leading-snug">
           <span className="text-ink-muted truncate">{filename ?? ''}</span>
           {language ? (
-            <span className="text-ink-faint uppercase tracking-wide">
+            <span className="text-ink-faint uppercase tracking-[0.2em] shrink-0">
               {language}
             </span>
           ) : null}
-        </div>
+        </figcaption>
       ) : null}
       <div className="relative">
-        <pre ref={ref} className={preClassName} {...rest}>
+        <pre ref={ref} className={className} {...rest}>
           {children}
         </pre>
         <button
@@ -57,7 +51,7 @@ export function Pre(props: PreProps) {
           aria-label={copied ? 'Copied' : 'Copy code'}
           title={copied ? 'Copied' : 'Copy code'}
           onClick={copy}
-          className="absolute top-2 right-2 inline-flex size-6 items-center justify-center rounded text-ink-muted hover:text-ink bg-paper/80 hover:bg-paper border border-rule opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+          className="absolute top-2 right-2 inline-flex size-6 items-center justify-center rounded-sm text-ink-faint hover:text-ink bg-paper/80 hover:bg-paper border border-rule opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
         >
           {copied ? (
             <Check aria-hidden className="size-3" />

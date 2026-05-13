@@ -35,8 +35,10 @@ const transformerMetadata: ShikiTransformer = {
   },
 }
 
+// Vitesse over catppuccin: lower saturation, designed-for-prose. Reads as
+// a cited artifact rather than a coloured IDE buffer pasted into the page.
 const shikiOptions = {
-  themes: { light: 'catppuccin-latte', dark: 'catppuccin-mocha' },
+  themes: { light: 'vitesse-light', dark: 'vitesse-dark' },
   defaultColor: false,
   transformers: [
     transformerNotationDiff(),
