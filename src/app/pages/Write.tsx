@@ -25,6 +25,7 @@ import {
   parseFrontmatter,
   patchFrontmatter,
 } from '@/app/write/frontmatter'
+import { useAutoSave, type SaveStatus } from '@/app/write/useAutoSave'
 import type { PostType } from '@/app/content-index'
 import type { RawMdxFrontmatter } from '*.mdx'
 
@@ -76,6 +77,8 @@ export default function Write() {
     () => validateLinks(parsed.body),
     [parsed.body],
   )
+
+  const saveStatus = useAutoSave(currentFile, source)
 
   const onSelect = useCallback((nextType: PostType, slug: string) => {
     const key = `${nextType}/${slug}`
@@ -191,6 +194,7 @@ export default function Write() {
               brokenLinks={linkStats.broken}
               pending={pending}
               error={error}
+              saveStatus={saveStatus}
             />
           </div>
 
@@ -281,8 +285,7 @@ export default function Write() {
           <>
             Flips <code className="font-mono text-ink">draft: true</code> to{' '}
             <code className="font-mono text-ink">draft: false</code> in the
-            frontmatter. (No write to disk yet &mdash; persistence lands in
-            a later commit.)
+            frontmatter. Auto-save will persist the change to disk.
           </>
         }
         confirmLabel="publish"
@@ -370,11 +373,13 @@ function StatusLine({
   brokenLinks,
   pending,
   error,
+  saveStatus,
 }: {
   body: string
   brokenLinks: number
   pending: boolean
   error: string | null
+  saveStatus: SaveStatus
 }) {
   const stats = useMemo(() => {
     const trimmed = body.trim()
@@ -387,7 +392,7 @@ function StatusLine({
   }, [body])
   const status = error ? 'error' : pending ? 'compiling…' : 'live'
   return (
-    <div className="term-status px-4 py-1.5 border-t border-rule shrink-0">
+    <div className="term-status px-4 py-1.5 border-t border-rule shrink-0 flex justify-between gap-3">
       <span className="value">
         {stats.words.toLocaleString()} words ·{' '}
         {stats.sentences.toLocaleString()} sent ·{' '}
@@ -402,7 +407,27 @@ function StatusLine({
         ) : null}{' · '}
         <span className={error ? 'text-brand' : ''}>{status}</span>
       </span>
+      <SaveIndicator status={saveStatus} />
     </div>
+  )
+}
+
+function SaveIndicator({ status }: { status: SaveStatus }) {
+  if (status.kind === 'idle') return null
+  if (status.kind === 'unsaved')
+    return <span className="text-ink-faint">unsaved</span>
+  if (status.kind === 'saving')
+    return <span className="text-ink-muted">saving…</span>
+  if (status.kind === 'saved')
+    return (
+      <span className="text-ink-muted" title={new Date(status.at).toISOString()}>
+        saved {format(new Date(status.at), 'HH:mm:ss')}
+      </span>
+    )
+  return (
+    <span className="text-brand" title={status.message}>
+      save failed
+    </span>
   )
 }
 
