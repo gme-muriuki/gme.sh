@@ -5,9 +5,19 @@ import type { PostEntry } from '@/app/content-index'
 import { PostRow } from '@/app/post/PostRow'
 import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
+/**
+ * Render the site homepage with a featured essay and recent post sections.
+ *
+ * Sets the page description metadata. If a featured essay exists, renders a
+ * FeatureTease for it and three sections ("Recent essays", "Recent notes",
+ * "Recent shipped") each showing up to five items or an empty line when there
+ * are no entries; if no featured essay exists, renders a placeholder article.
+ *
+ * @returns A React element representing the homepage; an article placeholder when no featured essay exists.
+ */
 export default function Home() {
   useDocumentMeta({
-    description: 'James Muriuki — Rust, systems, half-baked ideas.',
+    description: 'wellformed — Rust, systems, half-baked ideas.',
   })
   const essays = postsByType('essay')
   const notes = postsByType('note')
@@ -73,6 +83,12 @@ export default function Home() {
   )
 }
 
+/**
+ * Renders a teaser for the given essay: label, linked title, optional dek, date, and (when applicable) reading time.
+ *
+ * @param essay - The post entry whose frontmatter provides title, dek, date, type, readingTime, and slug used to build the teaser
+ * @returns A JSX element presenting the essay teaser
+ */
 function FeatureTease({ essay }: { essay: PostEntry }) {
   const f = essay.frontmatter
   return (
@@ -97,7 +113,7 @@ function FeatureTease({ essay }: { essay: PostEntry }) {
         <time dateTime={f.date}>
           {format(new Date(f.date), 'd MMM yyyy')}
         </time>
-        {typeof f.readingTime === 'number' ? (
+        {f.type === 'essay' && typeof f.readingTime === 'number' ? (
           <>
             <span aria-hidden className="text-ink-faint">
               ·

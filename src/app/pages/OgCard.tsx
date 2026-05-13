@@ -14,7 +14,13 @@ const typeLabels = {
 // Standalone route — no chrome. Renders a 1200×630 card per spec:
 // paper background, name in small caps, large serif title, ■, post-type
 // tag in brand color. Suitable for screenshotting; production converts
-// this via Next.js ImageResponse.
+/**
+ * Render a standalone Open Graph–style card (1200×630) for the post identified by the current route slug.
+ *
+ * Looks up the post in `allPosts`, sets the document title to `OG · <title>` when available (otherwise `OG card`), and renders a card showing the post type label, title, optional dek (trimmed to 140 characters), and optional formatted date. Falls back to a "404" title and "Not found" type label when no entry matches.
+ *
+ * @returns A JSX element containing the 1200×630 Open Graph card for the matched post, or a fallback card when the post is not found.
+ */
 export default function OgCard() {
   const { slug } = useParams<{ slug: string }>()
   const entry = allPosts.find((p) => p.slug === slug)
@@ -29,9 +35,9 @@ export default function OgCard() {
       >
         {/* corner: wordmark */}
         <div className="flex items-baseline justify-between">
-          <p className="wordmark text-2xl text-ink">
-            <span>James </span>
-            <span className="surname">Muriuki</span>
+          <p className="wordmark text-2xl text-ink whitespace-nowrap">
+            <span>well</span>
+            <span className="surname">formed</span>
           </p>
           <p className="font-mono text-sm uppercase tracking-[0.22em] text-ink-muted">
             gme.sh

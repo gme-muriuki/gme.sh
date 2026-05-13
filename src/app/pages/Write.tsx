@@ -1,326 +1,670 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useMdxEval } from '@/app/hooks/useMdxEval'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { format } from 'date-fns'
 import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
-import { EssayLayout } from '@/app/post/EssayLayout'
-import { NoteLayout } from '@/app/post/NoteLayout'
-import { ShippedLayout } from '@/app/post/ShippedLayout'
+import { useMdxEval } from '@/app/hooks/useMdxEval'
+import { useMediaQuery } from '@/app/hooks/useMediaQuery'
+import { cn } from '@/app/lib/cn'
+import { ConfirmDialog, SidePanelDrawer } from '@/app/lib/dialogs'
+import { Toolbar } from '@/app/write/Toolbar'
+import { Sidebar } from '@/app/write/Sidebar'
+import { MetaPanel } from '@/app/write/MetaPanel'
+import { Preview } from '@/app/write/Preview'
+import { SOURCES } from '@/app/write/sources'
+import { allPosts } from '@/app/content-index'
+import { makeTemplate } from '@/app/write/templates'
+import {
+  frontmatterText,
+  parseFrontmatter,
+  patchFrontmatter,
+} from '@/app/write/frontmatter'
+import { useAutoSave, type SaveStatus } from '@/app/write/useAutoSave'
+import {
+  fetchGithub,
+  loadSnapshot,
+  uploadImage,
+} from '@/app/write/persistence'
+import type { PostType } from '@/app/content-index'
+import type { RawMdxFrontmatter } from '*.mdx'
 
-type PostType = 'essay' | 'note' | 'shipped'
-type Growth = 'seedling' | 'growing' | 'evergreen'
+const Editor = lazy(() => import('@/app/write/Editor'))
 
-const DEFAULT_BODY = `Open with one tight paragraph. The reader is on the fence about whether to keep going — earn the next click here, not in the heading.
+const INITIAL_TYPE: PostType = 'essay'
 
-## A section heading
-
-Body copy, with an inline aside.<Sidenote>Sidenotes flow into the right rail on desktop and collapse to a popover on mobile.</Sidenote>
-
-\`\`\`rust src/lib.rs
-fn allocate(layout: Layout) -> *mut u8 {
-    System.alloc(layout)
-}
-\`\`\`
-
-<Callout type="note">
-Callouts use a quiet brand-edged frame.
-</Callout>
-`
-
+/**
+ * Renders the Write page: a full MDX editing UI with editor, live preview, file list, metadata panel, autosave, snapshot loading, and publish flow.
+ *
+ * @returns The React element for the Write page
+ */
 export default function Write() {
   useDocumentMeta({ title: 'Write' })
-  const [postType, setPostType] = useState<PostType>('essay')
-  const [title, setTitle] = useState('Untitled')
-  const [dek, setDek] = useState('')
-  const [tagsRaw, setTagsRaw] = useState('')
-  const [growth, setGrowth] = useState<Growth>('seedling')
-  const [body, setBody] = useState(DEFAULT_BODY)
-  const [advancedOpen, setAdvancedOpen] = useState(false)
 
-  // debounce body so we don't recompile on every keystroke
-  const [debouncedBody, setDebouncedBody] = useState(body)
+  const [currentFile, setCurrentFile] = useState<{
+    type: PostType
+    slug: string
+  } | null>(null)
+  const [source, setSource] = useState<string>(() => makeTemplate(INITIAL_TYPE))
+  const [type, setType] = useState<PostType>(INITIAL_TYPE)
+  const [mode, setMode] = useState<'edit' | 'preview'>('edit')
+  const [device, setDevice] = useState<'phone' | 'tablet' | 'desktop'>(
+    'desktop',
+  )
+  const [panels, setPanels] = useState<{ left: boolean; right: boolean }>(
+    () => {
+      if (typeof window === 'undefined') return { left: true, right: true }
+      const w = window.innerWidth
+      return { left: w >= 1024, right: w >= 1280 }
+    },
+  )
+  const [recent, setRecent] = useState<
+    Array<{ type: PostType; slug: string }>
+  >([])
+  const [publishDialog, setPublishDialog] = useState(false)
+  const [pendingSnapshot, setPendingSnapshot] = useState<string | null>(null)
+  const [focusMode, setFocusMode] = useState(false)
+  const [activePane, setActivePane] = useState<'editor' | 'preview'>('editor')
+
+  const parsed = useMemo(() => parseFrontmatter(source), [source])
+  const deferredSource = useDeferredValue(source)
+  const deferredParsed = useMemo(
+    () => parseFrontmatter(deferredSource),
+    [deferredSource],
+  )
+
+  const isModified = useMemo(() => {
+    if (!currentFile) return false
+    const key = `${currentFile.type}/${currentFile.slug}`
+    return SOURCES[key] !== source
+  }, [currentFile, source])
+
+  const { Component, error, pending } = useMdxEval(deferredParsed.body)
+
+  const linkStats = useMemo(
+    () => validateLinks(parsed.body),
+    [parsed.body],
+  )
+
+  const autoSave = useAutoSave(currentFile, source)
+
+  const onSelect = useCallback((nextType: PostType, slug: string) => {
+    const key = `${nextType}/${slug}`
+    const raw = SOURCES[key]
+    if (!raw) return
+    setCurrentFile({ type: nextType, slug })
+    setSource(raw)
+    setType(nextType)
+    setRecent((prev) => {
+      const without = prev.filter(
+        (r) => !(r.type === nextType && r.slug === slug),
+      )
+      return [{ type: nextType, slug }, ...without].slice(0, 5)
+    })
+  }, [])
+
+  const onNew = useCallback((t: PostType) => {
+    setCurrentFile(null)
+    setType(t)
+    setSource(makeTemplate(t))
+  }, [])
+
+  const onPatch = useCallback((patch: Partial<RawMdxFrontmatter>) => {
+    setSource((s) => patchFrontmatter(s, patch))
+  }, [])
+
+  const onImageUpload = useCallback(
+    async (file: File): Promise<string | null> => {
+      const result = await uploadImage(file)
+      return result.ok ? result.url : null
+    },
+    [],
+  )
+
+  const onGithubCite = useCallback(
+    async (url: string): Promise<string | null> => {
+      const r = await fetchGithub(url)
+      if (!r.ok) return null
+      const canonical = `https://github.com/${r.owner}/${r.repo}/blob/${r.ref}/${r.path}#L${r.startLine}-L${r.endLine}`
+      return '```' + r.lang + ' source=' + canonical + '\n' + r.content + '\n```\n'
+    },
+    [],
+  )
+
+  const doLoadSnapshot = useCallback(
+    async (timestamp: string) => {
+      if (!currentFile) return
+      const r = await loadSnapshot(currentFile.type, currentFile.slug, timestamp)
+      if (r.ok) setSource(r.source)
+    },
+    [currentFile],
+  )
+
+  const onLoadSnapshot = useCallback(
+    (timestamp: string) => {
+      if (!currentFile) return
+      const dirty = SOURCES[`${currentFile.type}/${currentFile.slug}`] !== source
+      if (dirty) {
+        setPendingSnapshot(timestamp)
+        return
+      }
+      void doLoadSnapshot(timestamp)
+    },
+    [currentFile, source, doLoadSnapshot],
+  )
+
+  const onConfirmLoadSnapshot = useCallback(() => {
+    if (pendingSnapshot) void doLoadSnapshot(pendingSnapshot)
+    setPendingSnapshot(null)
+  }, [pendingSnapshot, doLoadSnapshot])
+
+  // Cmd/Ctrl+. toggles focus mode; ESC always exits it.
   useEffect(() => {
-    const id = window.setTimeout(() => setDebouncedBody(body), 280)
-    return () => window.clearTimeout(id)
-  }, [body])
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === '.') {
+        e.preventDefault()
+        setFocusMode((v) => !v)
+        return
+      }
+      if (e.key === 'Escape') {
+        setFocusMode((v) => (v ? false : v))
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
-  const { Component, error, pending } = useMdxEval(debouncedBody)
+  const draftRef = useRef(parsed.frontmatter.draft === true)
+  draftRef.current = parsed.frontmatter.draft === true
 
-  const tags = useMemo(
-    () =>
-      tagsRaw
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
-    [tagsRaw],
-  )
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const onPublishToggle = useCallback(() => {
+    if (draftRef.current) {
+      setPublishDialog(true)
+      return
+    }
+    const next = patchFrontmatter(source, { draft: true })
+    setSource(next)
+    void autoSave.flush(next)
+  }, [source, autoSave])
 
-  return (
-    <div className="min-h-[80vh]">
-      <header className="mb-6">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
-          write &mdash; in-memory only, no persistence
-        </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tighter leading-[1] text-ink">
-          /write
-        </h1>
-      </header>
+  const onConfirmPublish = useCallback(() => {
+    const next = patchFrontmatter(source, { draft: false })
+    setSource(next)
+    setPublishDialog(false)
+    void autoSave.flush(next)
+  }, [source, autoSave])
 
-      <Toolbar
-        postType={postType}
-        setPostType={setPostType}
-        title={title}
-        setTitle={setTitle}
-        dek={dek}
-        setDek={setDek}
-        tagsRaw={tagsRaw}
-        setTagsRaw={setTagsRaw}
-        growth={growth}
-        setGrowth={setGrowth}
-        advancedOpen={advancedOpen}
-        setAdvancedOpen={setAdvancedOpen}
-      />
+  const onTogglePanel = useCallback((side: 'left' | 'right') => {
+    setPanels((p) => ({ ...p, [side]: !p[side] }))
+  }, [])
 
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="flex flex-col">
-          <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted mb-2">
-            body &middot; MDX
-          </label>
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            spellCheck={false}
-            className="flex-1 min-h-[60vh] font-mono text-[13px] leading-[1.65] bg-paper-raised/50 border border-rule rounded p-4 text-ink resize-vertical focus:outline-none focus:border-rule-strong"
-          />
-          <p className="mt-2 font-mono text-[10px] text-ink-faint">
-            {body.length.toLocaleString()} chars &middot;{' '}
-            {pending ? 'compiling…' : error ? 'error' : 'live'}
-          </p>
-        </div>
+  // Only mount the drawer Dialogs at widths where the side panel is *not*
+  // already a column. Otherwise Radix's outside-click + ESC handling fires
+  // on the hidden dialogs and collapses both panels at once.
+  const leftAsDrawer = useMediaQuery('(max-width: 1023.98px)')
+  const rightAsDrawer = useMediaQuery('(max-width: 1279.98px)')
 
-        <div className="lg:border-l lg:border-rule lg:pl-6 min-w-0">
-          <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted">
-            preview
-          </label>
-          {error ? (
-            <pre className="mt-3 text-xs font-mono whitespace-pre-wrap text-[var(--destructive)] border border-[var(--destructive)]/30 rounded p-3 bg-paper-raised/50">
-              {error}
-            </pre>
-          ) : Component ? (
-            <div className="mt-4">
-              <Preview
-                postType={postType}
-                title={title}
-                dek={dek || undefined}
-                date={today}
-                tags={tags.length > 0 ? tags : undefined}
-                growth={growth}
-              >
-                <Component />
-              </Preview>
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-ink-faint italic">
-              compiling…
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
+  const fileKey = currentFile
+    ? `${currentFile.type}/${currentFile.slug}`
+    : 'draft'
+  const rawFm = frontmatterText(source)
+  const saveTick =
+    autoSave.status.kind === 'saved' ? autoSave.status.at : 0
 
-function Toolbar(props: {
-  postType: PostType
-  setPostType: (v: PostType) => void
-  title: string
-  setTitle: (v: string) => void
-  dek: string
-  setDek: (v: string) => void
-  tagsRaw: string
-  setTagsRaw: (v: string) => void
-  growth: Growth
-  setGrowth: (v: Growth) => void
-  advancedOpen: boolean
-  setAdvancedOpen: (v: boolean) => void
-}) {
-  const {
-    postType,
-    setPostType,
-    title,
-    setTitle,
-    dek,
-    setDek,
-    tagsRaw,
-    setTagsRaw,
-    growth,
-    setGrowth,
-    advancedOpen,
-    setAdvancedOpen,
-  } = props
+  const dimEditor = mode === 'edit' && activePane !== 'editor'
+  const dimPreview = mode === 'edit' && activePane !== 'preview'
 
   return (
-    <div className="border border-rule rounded bg-paper-raised/40 p-4 space-y-3">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <TypePicker value={postType} onChange={setPostType} />
-        <Field label="title" className="flex-1 min-w-[18ch]">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-transparent border-b border-rule focus:border-ink focus:outline-none py-1 text-base text-ink"
-          />
-        </Field>
-      </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Field label="dek" className="flex-1 min-w-[24ch]">
-          <input
-            type="text"
-            value={dek}
-            onChange={(e) => setDek(e.target.value)}
-            placeholder="optional sentence under the title"
-            className="w-full bg-transparent border-b border-rule focus:border-ink focus:outline-none py-1 text-sm text-ink-muted placeholder:text-ink-faint"
-          />
-        </Field>
-        <Field label="tags" className="flex-1 min-w-[18ch]">
-          <input
-            type="text"
-            value={tagsRaw}
-            onChange={(e) => setTagsRaw(e.target.value)}
-            placeholder="rust, systems, allocators"
-            className="w-full bg-transparent border-b border-rule focus:border-ink focus:outline-none py-1 text-sm text-ink-muted placeholder:text-ink-faint"
-          />
-        </Field>
-        {postType === 'note' ? (
-          <Field label="growth">
-            <select
-              value={growth}
-              onChange={(e) => setGrowth(e.target.value as Growth)}
-              className="bg-transparent border-b border-rule focus:border-ink focus:outline-none py-1 text-sm text-ink"
-            >
-              <option value="seedling">seedling</option>
-              <option value="growing">growing</option>
-              <option value="evergreen">evergreen</option>
-            </select>
-          </Field>
-        ) : null}
-      </div>
-      <div>
+    <div className="flex flex-col h-screen min-h-0 bg-paper text-ink">
+      {!focusMode ? (
+        <Toolbar
+          currentFile={currentFile}
+          isModified={isModified}
+          isDraft={parsed.frontmatter.draft === true}
+          mode={mode}
+          onModeChange={setMode}
+          onPublishToggle={onPublishToggle}
+          panels={panels}
+          onTogglePanel={onTogglePanel}
+        />
+      ) : (
         <button
           type="button"
-          onClick={() => setAdvancedOpen(!advancedOpen)}
-          className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted hover:text-ink transition-colors"
+          onClick={() => setFocusMode(false)}
+          aria-label="Exit focus mode"
+          title="Exit focus mode (ESC)"
+          className="fixed top-2 right-3 z-40 font-mono text-[10px] uppercase tracking-[0.22em] text-ink-faint hover:text-ink transition-colors"
         >
-          {advancedOpen ? '▾' : '▸'} frontmatter
+          esc · focus
         </button>
-        {advancedOpen ? (
-          <pre className="mt-2 not-prose rounded border border-rule bg-paper p-3 text-[11.5px] font-mono leading-[1.5] text-ink-muted overflow-x-auto">
-{`---
-title: ${title}
-date: ${new Date().toISOString().slice(0, 10)}
-type: ${postType}${dek ? `\ndek: ${dek}` : ''}${tagsRaw ? `\ntags: [${tagsRaw.split(',').map((s) => s.trim()).filter(Boolean).map((t) => `"${t}"`).join(', ')}]` : ''}${postType === 'note' ? `\ngrowth: ${growth}` : ''}
----`}
-          </pre>
-        ) : null}
+      )}
+
+      <div
+        className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[var(--lg-cols)] xl:grid-cols-[var(--xl-cols)]"
+        style={
+          {
+            '--lg-cols': focusMode
+              ? '1fr'
+              : panels.left
+                ? '220px 1fr'
+                : '1fr',
+            '--xl-cols': focusMode ? '1fr' : xlCols(panels),
+          } as React.CSSProperties
+        }
+      >
+        <div
+          className={cn(
+            'border-r border-rule min-h-0 overflow-hidden',
+            !focusMode && panels.left ? 'hidden lg:block' : 'hidden',
+          )}
+        >
+          <Sidebar
+            currentFile={currentFile}
+            recent={recent}
+            onSelect={onSelect}
+            onNew={onNew}
+          />
+        </div>
+
+        <div
+          className={cn(
+            'min-h-0 grid grid-cols-1',
+            mode === 'edit' ? 'md:grid-cols-2' : 'md:grid-cols-1',
+          )}
+        >
+          <div
+            onPointerDown={() => setActivePane('editor')}
+            className={cn(
+              'min-h-0 border-r border-rule transition-opacity duration-300 hover:opacity-100',
+              mode === 'edit' ? 'flex flex-col' : 'hidden',
+              dimEditor ? 'opacity-40' : 'opacity-100',
+            )}
+          >
+            <div className="flex-1 min-h-0">
+              <Suspense fallback={<EditorFallback />}>
+                <Editor
+                  value={source}
+                  onChange={setSource}
+                  onImageUpload={onImageUpload}
+                  onGithubCite={onGithubCite}
+                />
+              </Suspense>
+            </div>
+            <StatusLine
+              body={parsed.body}
+              brokenLinks={linkStats.broken}
+              pending={pending}
+              error={error}
+              saveStatus={autoSave.status}
+            />
+          </div>
+
+          <div
+            onPointerDown={() => setActivePane('preview')}
+            className={cn(
+              'min-h-0 overflow-y-auto flex flex-col transition-opacity duration-300 hover:opacity-100',
+              mode === 'preview' ? 'block' : 'hidden md:flex',
+              dimPreview ? 'opacity-40' : 'opacity-100',
+            )}
+          >
+            <div className="px-4 py-1.5 flex justify-center border-b border-rule bg-paper sticky top-0 z-10 shrink-0">
+              <DeviceTabs value={device} onChange={setDevice} />
+            </div>
+            <div
+              className="mx-auto py-8 px-6 w-full"
+              style={{ maxWidth: DEVICE_MAX[device] }}
+            >
+              {error ? (
+                <PreviewError message={error} />
+              ) : Component ? (
+                <Preview type={type} frontmatter={parsed.frontmatter}>
+                  <Component />
+                </Preview>
+              ) : (
+                <p className="text-ink-faint italic font-mono text-xs">
+                  compiling…
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            'border-l border-rule min-h-0 overflow-hidden',
+            !focusMode && panels.right ? 'hidden xl:block' : 'hidden',
+          )}
+        >
+          <MetaPanel
+            fileKey={fileKey}
+            frontmatter={parsed.frontmatter}
+            type={type}
+            onType={setType}
+            onPatch={onPatch}
+            parseError={parsed.error}
+            rawFrontmatter={rawFm}
+            currentFile={currentFile}
+            saveTick={saveTick}
+            onLoadSnapshot={onLoadSnapshot}
+          />
+        </div>
       </div>
+
+      {leftAsDrawer ? (
+        <SidePanelDrawer
+          side="left"
+          title="Files"
+          open={panels.left}
+          onOpenChange={(o) => setPanels((p) => ({ ...p, left: o }))}
+        >
+          <Sidebar
+            currentFile={currentFile}
+            recent={recent}
+            onSelect={onSelect}
+            onNew={onNew}
+          />
+        </SidePanelDrawer>
+      ) : null}
+
+      <ConfirmDialog
+        open={pendingSnapshot !== null}
+        onOpenChange={(o) => !o && setPendingSnapshot(null)}
+        title="discard unsaved changes?"
+        description={
+          <p className="text-sm text-ink leading-snug">
+            Loading this snapshot will replace the current editor content. Your
+            in-flight changes will be lost.
+          </p>
+        }
+        confirmLabel="load snapshot"
+        onConfirm={onConfirmLoadSnapshot}
+      />
+
+      <ConfirmDialog
+        open={publishDialog}
+        onOpenChange={setPublishDialog}
+        title="publish this post?"
+        description={
+          <div className="space-y-2">
+            <p className="text-lg font-semibold text-ink leading-tight">
+              {parsed.frontmatter.title ?? 'Untitled'}
+            </p>
+            {parsed.frontmatter.dek ? (
+              <p className="text-sm text-ink-muted leading-snug">
+                {parsed.frontmatter.dek}
+              </p>
+            ) : null}
+            <p className="font-mono text-[11px] text-ink-faint uppercase tracking-[0.15em]">
+              {parsed.frontmatter.date
+                ? format(new Date(parsed.frontmatter.date), 'd MMM yyyy')
+                : '—'}
+            </p>
+          </div>
+        }
+        note={
+          <>
+            Flips <code className="font-mono text-ink">draft: true</code> to{' '}
+            <code className="font-mono text-ink">draft: false</code> and writes
+            to disk immediately.
+          </>
+        }
+        confirmLabel="publish"
+        onConfirm={onConfirmPublish}
+      />
+
+      {rightAsDrawer ? (
+        <SidePanelDrawer
+          side="right"
+          title="Document"
+          open={panels.right}
+          onOpenChange={(o) => setPanels((p) => ({ ...p, right: o }))}
+        >
+          <MetaPanel
+            fileKey={fileKey}
+            frontmatter={parsed.frontmatter}
+            type={type}
+            onType={setType}
+            onPatch={onPatch}
+            parseError={parsed.error}
+            rawFrontmatter={rawFm}
+            currentFile={currentFile}
+            saveTick={saveTick}
+            onLoadSnapshot={onLoadSnapshot}
+          />
+        </SidePanelDrawer>
+      ) : null}
     </div>
   )
 }
 
-function TypePicker({
+const DEVICE_MAX: Record<'phone' | 'tablet' | 'desktop', number> = {
+  phone: 390,
+  tablet: 768,
+  desktop: 1024,
+}
+
+/**
+ * Renders a compact device-mode selector for previewing content (phone, tablet, desktop).
+ *
+ * @param value - The currently selected device mode (`'phone' | 'tablet' | 'desktop'`).
+ * @param onChange - Callback invoked with the new device mode when the user selects a different option.
+ * @returns A React element containing the three device buttons with the active state reflected via `aria-pressed`.
+ */
+function DeviceTabs({
   value,
   onChange,
 }: {
-  value: PostType
-  onChange: (v: PostType) => void
+  value: 'phone' | 'tablet' | 'desktop'
+  onChange: (v: 'phone' | 'tablet' | 'desktop') => void
 }) {
-  const opts: PostType[] = ['essay', 'note', 'shipped']
+  const opts: Array<'phone' | 'tablet' | 'desktop'> = [
+    'phone',
+    'tablet',
+    'desktop',
+  ]
   return (
-    <div className="inline-flex rounded border border-rule overflow-hidden">
-      {opts.map((opt) => (
-        <button
-          key={opt}
-          type="button"
-          onClick={() => onChange(opt)}
-          className={[
-            'px-3 py-1 font-mono text-[11px] uppercase tracking-[0.15em] transition-colors border-r border-rule last:border-r-0',
-            opt === value
-              ? 'bg-paper text-ink'
-              : 'text-ink-muted hover:text-ink',
-          ].join(' ')}
-        >
-          {opt}
-        </button>
+    <div className="inline-flex items-baseline gap-2 font-mono text-[10px] uppercase tracking-[0.18em]">
+      {opts.map((opt, i) => (
+        <span key={opt} className="inline-flex items-baseline gap-2">
+          {i > 0 ? (
+            <span aria-hidden className="text-ink-faint">
+              ·
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => onChange(opt)}
+            aria-pressed={value === opt}
+            className={cn(
+              'no-underline transition-opacity',
+              value === opt
+                ? 'nav-active text-ink'
+                : 'text-ink-muted hover:opacity-75',
+            )}
+          >
+            {opt}
+          </button>
+        </span>
       ))}
     </div>
   )
 }
 
-function Field({
-  label,
-  children,
-  className,
+/**
+ * Build the CSS grid-template-columns value for the wide (XL) layout based on side panel visibility.
+ *
+ * @param p - Flags indicating whether the left and right side panels are shown
+ * @returns A space-separated `grid-template-columns` string that includes `'220px'` if `p.left` is true, always includes `'1fr'`, and includes `'300px'` if `p.right` is true
+ */
+function xlCols(p: { left: boolean; right: boolean }): string {
+  const parts: string[] = []
+  if (p.left) parts.push('220px')
+  parts.push('1fr')
+  if (p.right) parts.push('300px')
+  return parts.join(' ')
+}
+
+/**
+ * Render the editor status line showing word, sentence, and character counts, broken-link count, compile/error state, and the autosave indicator.
+ *
+ * @param body - The MDX/text body used to compute word, sentence, and character counts
+ * @param brokenLinks - Number of broken internal links to display (shown only when > 0)
+ * @param pending - Whether MDX compilation is currently in progress
+ * @param error - Compilation error message; when present the status is shown as an error
+ * @param saveStatus - Autosave state passed to the SaveIndicator component
+ * @returns The status line element that displays counts, link info, compile status, and the save indicator
+ */
+function StatusLine({
+  body,
+  brokenLinks,
+  pending,
+  error,
+  saveStatus,
 }: {
-  label: string
-  children: React.ReactNode
-  className?: string
+  body: string
+  brokenLinks: number
+  pending: boolean
+  error: string | null
+  saveStatus: SaveStatus
 }) {
+  const stats = useMemo(() => {
+    const trimmed = body.trim()
+    if (trimmed === '') return { chars: 0, words: 0, sentences: 0 }
+    const words = trimmed.split(/\s+/).filter(Boolean).length
+    const sentences = trimmed
+      .split(/[.!?]+/)
+      .filter((s) => s.trim() !== '').length
+    return { chars: body.length, words, sentences }
+  }, [body])
+  const status = error ? 'error' : pending ? 'compiling…' : 'live'
   return (
-    <label
-      className={['flex flex-col gap-0.5', className ?? ''].join(' ').trim()}
-    >
-      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted">
-        {label}
+    <div className="term-status px-4 py-1.5 border-t border-rule shrink-0 flex justify-between gap-3">
+      <span className="value">
+        {stats.words.toLocaleString()} words ·{' '}
+        {stats.sentences.toLocaleString()} sent ·{' '}
+        {stats.chars.toLocaleString()} chars
+        {brokenLinks > 0 ? (
+          <>
+            {' · '}
+            <span className="text-brand" title="broken internal links">
+              {brokenLinks} broken
+            </span>
+          </>
+        ) : null}{' · '}
+        <span className={error ? 'text-brand' : ''}>{status}</span>
       </span>
-      {children}
-    </label>
+      <SaveIndicator status={saveStatus} />
+    </div>
   )
 }
 
-function Preview(props: {
-  postType: PostType
-  title: string
-  dek?: string
-  date: string
-  tags?: string[]
-  growth: Growth
-  children: React.ReactNode
-}) {
-  const { postType, title, dek, date, tags, growth, children } = props
-  if (postType === 'essay') {
+/**
+ * Render a compact textual indicator for the autosave status.
+ *
+ * @param status - Autosave status object; `kind` is one of `'idle'`, `'unsaved'`, `'saving'`, `'saved'`, or an error kind. When `kind` is `'saved'`, `status.at` provides the timestamp shown; error kinds may include `status.message`.
+ * @returns The indicator element to display, or `null` when `status.kind` is `'idle'`.
+ */
+function SaveIndicator({ status }: { status: SaveStatus }) {
+  if (status.kind === 'idle') return null
+  if (status.kind === 'unsaved')
+    return <span className="text-ink-faint">unsaved</span>
+  if (status.kind === 'saving')
+    return <span className="text-ink-muted">saving…</span>
+  if (status.kind === 'saved')
     return (
-      <EssayLayout
-        title={title}
-        dek={dek}
-        date={date}
-        tags={tags}
-        permalink="/write/preview"
-      >
-        {children}
-      </EssayLayout>
+      <span className="text-ink-muted" title={new Date(status.at).toISOString()}>
+        saved {format(new Date(status.at), 'HH:mm:ss')}
+      </span>
     )
-  }
-  if (postType === 'note') {
-    return (
-      <NoteLayout
-        title={title}
-        date={date}
-        growth={growth}
-        tags={tags}
-        permalink="/write/preview"
-      >
-        {children}
-      </NoteLayout>
-    )
-  }
   return (
-    <ShippedLayout
-      title={title}
-      dek={dek}
-      date={date}
-      tags={tags}
-      permalink="/write/preview"
-    >
-      {children}
-    </ShippedLayout>
+    <span className="text-brand" title={status.message}>
+      save failed
+    </span>
+  )
+}
+
+const KNOWN_STATIC_ROUTES = new Set([
+  '/',
+  '/archive',
+  '/about',
+  '/uses',
+  '/now',
+  '/projects',
+  '/talks',
+  '/reading',
+  '/essays',
+  '/notes',
+  '/shipped',
+  '/write',
+  '/rss.xml',
+])
+
+const LINK_RE = /\[[^\]]*?\]\(([^)]+)\)/g
+const POST_RE = /^\/(essays|notes|shipped)\/([^/?#]+)/
+
+/**
+ * Counts Markdown links in the given MDX/text and identifies broken internal links.
+ *
+ * Scans `body` for `[text](href)` link patterns, treats links whose href starts with `/` as internal,
+ * and considers internal links broken if they do not match a known static route or an existing post.
+ *
+ * @param body - MDX or markdown text to scan for links
+ * @returns An object with `total` equal to the number of Markdown links found and `broken` equal to the count of broken internal links
+ */
+function validateLinks(body: string): { total: number; broken: number } {
+  let total = 0
+  let broken = 0
+  for (const m of body.matchAll(LINK_RE)) {
+    const raw = m[1]?.trim()
+    if (!raw) continue
+    total++
+    const href = raw.split(/[?#]/)[0] ?? raw
+    if (!href.startsWith('/')) continue
+    if (KNOWN_STATIC_ROUTES.has(href)) continue
+    const postMatch = href.match(POST_RE)
+    if (postMatch) {
+      const kind = postMatch[1] as 'essays' | 'notes' | 'shipped'
+      const slug = postMatch[2]
+      const type =
+        kind === 'essays' ? 'essay' : kind === 'notes' ? 'note' : 'shipped'
+      const exists = allPosts.some((p) => p.type === type && p.slug === slug)
+      if (!exists) broken++
+      continue
+    }
+    broken++
+  }
+  return { total, broken }
+}
+
+/**
+ * Placeholder UI shown while the editor component is loading.
+ *
+ * @returns A centered, muted monospaced placeholder element with the text "loading editor…"
+ */
+function EditorFallback() {
+  return (
+    <div className="h-full flex items-center justify-center text-ink-faint font-mono text-xs">
+      loading editor…
+    </div>
+  )
+}
+
+/**
+ * Renders a styled preformatted block that displays an MDX/preview compilation error message.
+ *
+ * @param message - The error text to show inside the preformatted block
+ * @returns A `JSX.Element` containing the formatted error message
+ */
+function PreviewError({ message }: { message: string }) {
+  return (
+    <pre className="text-xs font-mono whitespace-pre-wrap text-[var(--destructive)] border border-[var(--destructive)]/30 rounded p-3 bg-paper-raised/50">
+      {message}
+    </pre>
   )
 }

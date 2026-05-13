@@ -1,37 +1,31 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import path from 'node:path'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import mdx from '@mdx-js/rollup'
-import remarkFrontmatter from 'remark-frontmatter'
-import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import rehypeSlug from 'rehype-slug'
-import rehypeAutolinkHeadings from 'rehype-autolink-headings'
-import rehypeShiki from '@shikijs/rehype'
+import { buildTimePlugins } from './src/app/mdx/pipeline'
 import {
-  transformerNotationDiff,
-  transformerNotationErrorLevel,
-  transformerNotationFocus,
-  transformerNotationHighlight,
-} from '@shikijs/transformers'
-import type { ShikiTransformer } from 'shiki'
+  THEME_COLOR_DARK,
+  THEME_COLOR_LIGHT,
+} from './src/styles/theme-colors'
+import { writeBack } from './vite-plugins/write-back'
 
-// reads `\`\`\`rust src/lib.rs` style meta and attaches filename + language
-// to the rendered <pre> so the Pre MDX component can render the chrome.
-const transformerMetadata: ShikiTransformer = {
-  name: 'metadata',
-  pre(node) {
-    const lang = this.options.lang
-    if (lang) node.properties['data-language'] = lang
-    const meta = (this.options.meta as { __raw?: string } | undefined)?.__raw
-    if (meta) {
-      const tok = meta.split(/\s+/).find((s) => /[./]/.test(s))
-      if (tok) node.properties['data-filename'] = tok
-    }
-  },
+// Substitutes the theme-color placeholders in index.html with the values
+// from src/styles/theme-colors.ts, so the no-flash inline script and
+/**
+ * Create a Vite plugin that injects theme colors into index.html.
+ *
+ * @returns A Vite `Plugin` that replaces `__THEME_LIGHT__` with `THEME_COLOR_LIGHT` and `__THEME_DARK__` with `THEME_COLOR_DARK` in HTML during `transformIndexHtml`.
+ */
+function themeColorInject(): Plugin {
+  return {
+    name: 'theme-color-inject',
+    transformIndexHtml(html) {
+      return html
+        .replace(/__THEME_LIGHT__/g, THEME_COLOR_LIGHT)
+        .replace(/__THEME_DARK__/g, THEME_COLOR_DARK)
+    },
+  }
 }
 
 export default defineConfig({
@@ -39,43 +33,12 @@ export default defineConfig({
     {
       enforce: 'pre',
       ...mdx({
-        remarkPlugins: [
-          remarkFrontmatter,
-          remarkMdxFrontmatter,
-          remarkGfm,
-          remarkMath,
-        ],
-        rehypePlugins: [
-          rehypeSlug,
-          [
-            rehypeAutolinkHeadings,
-            {
-              behavior: 'wrap',
-              properties: { className: ['heading-anchor'] },
-            },
-          ],
-          rehypeKatex,
-          [
-            rehypeShiki,
-            {
-              themes: {
-                light: 'catppuccin-latte',
-                dark: 'catppuccin-mocha',
-              },
-              defaultColor: false,
-              transformers: [
-                transformerNotationDiff(),
-                transformerNotationHighlight(),
-                transformerNotationFocus(),
-                transformerNotationErrorLevel(),
-                transformerMetadata,
-              ],
-            },
-          ],
-        ],
+        ...buildTimePlugins,
         providerImportSource: '@mdx-js/react',
       }),
     },
+    themeColorInject(),
+    writeBack(),
     react(),
     tailwindcss(),
   ],

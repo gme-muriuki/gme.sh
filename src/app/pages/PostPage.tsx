@@ -1,20 +1,19 @@
 import { useParams } from 'react-router'
 import { findPost } from '@/app/content-index'
-import { EssayLayout } from '@/app/post/EssayLayout'
-import { NoteLayout } from '@/app/post/NoteLayout'
-import { ShippedLayout } from '@/app/post/ShippedLayout'
+import { permalink } from '@/app/lib/permalink'
+import { PostLayout } from '@/app/post/PostLayout'
 import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 type Props = {
   type: 'essay' | 'note' | 'shipped'
 }
 
-const pathPrefix: Record<Props['type'], string> = {
-  essay: '/essays',
-  note: '/notes',
-  shipped: '/shipped',
-}
-
+/**
+ * Render the page for a post of the given type based on the current route slug.
+ *
+ * @param type - The post type to render (`'essay' | 'note' | 'shipped'`)
+ * @returns A React element that renders the found post inside `PostLayout`, or a `NotHere` fallback when the slug is missing or no entry is found
+ */
 export default function PostPage({ type }: Props) {
   const { slug } = useParams<{ slug: string }>()
   const entry = slug ? findPost(type, slug) : undefined
@@ -22,57 +21,15 @@ export default function PostPage({ type }: Props) {
     title: entry?.frontmatter.title,
     description: entry?.frontmatter.dek,
   })
-  if (!slug) {
-    return <NotHere type={type} slug="" />
-  }
-  if (!entry) {
-    return <NotHere type={type} slug={slug} />
+  if (!slug || !entry) {
+    return <NotHere type={type} slug={slug ?? ''} />
   }
 
   const { Component, frontmatter } = entry
-  const permalink = `${pathPrefix[type]}/${slug}`
-
-  if (type === 'essay') {
-    return (
-      <EssayLayout
-        title={frontmatter.title}
-        dek={frontmatter.dek}
-        date={frontmatter.date}
-        readingTime={frontmatter.readingTime}
-        tags={frontmatter.tags}
-        series={frontmatter.series}
-        permalink={permalink}
-      >
-        <Component />
-      </EssayLayout>
-    )
-  }
-  if (type === 'note') {
-    return (
-      <NoteLayout
-        title={frontmatter.title}
-        date={frontmatter.date}
-        growth={frontmatter.growth ?? 'seedling'}
-        lastTended={frontmatter.lastTended}
-        tags={frontmatter.tags}
-        permalink={permalink}
-      >
-        <Component />
-      </NoteLayout>
-    )
-  }
   return (
-    <ShippedLayout
-      title={frontmatter.title}
-      dek={frontmatter.dek}
-      date={frontmatter.date}
-      hero={frontmatter.hero}
-      links={frontmatter.links}
-      tags={frontmatter.tags}
-      permalink={permalink}
-    >
+    <PostLayout frontmatter={frontmatter} permalink={permalink(type, slug)}>
       <Component />
-    </ShippedLayout>
+    </PostLayout>
   )
 }
 

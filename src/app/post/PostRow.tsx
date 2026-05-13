@@ -1,17 +1,11 @@
 import { Link } from 'react-router'
 import { format } from 'date-fns'
 import type { PostEntry } from '@/app/content-index'
+import { permalink } from '@/app/lib/permalink'
 
 type Props = {
   entry: PostEntry
 }
-
-const pathPrefix = {
-  essay: '/essays',
-  note: '/notes',
-  shipped: '/shipped',
-  page: '/pages',
-} as const
 
 const labels = {
   essay: 'Essay',
@@ -20,9 +14,18 @@ const labels = {
   page: 'Page',
 } as const
 
+/**
+ * Renders a single post as a linked list row showing its metadata and content preview.
+ *
+ * Displays the post date, type label, and — when present — reading time for essays or growth for notes;
+ * followed by the title, optional dek (subtitle), and optional tags. The row links to the post permalink.
+ *
+ * @param entry - The post entry to render; expected to contain `frontmatter` (date, title, dek, tags, type, readingTime, growth) and `slug`
+ * @returns A list item JSX element containing a link to the post with its metadata and preview content
+ */
 export function PostRow({ entry }: Props) {
   const { frontmatter: f, type } = entry
-  const href = `${pathPrefix[type]}/${entry.slug}`
+  const href = permalink(type, entry.slug)
   return (
     <li className="border-b border-rule/60 py-5">
       <Link to={href} className="group block no-underline hover:no-underline">
@@ -34,7 +37,7 @@ export function PostRow({ entry }: Props) {
             ·
           </span>
           <span>{labels[type]}</span>
-          {typeof f.readingTime === 'number' ? (
+          {f.type === 'essay' && typeof f.readingTime === 'number' ? (
             <>
               <span aria-hidden className="text-ink-faint">
                 ·
@@ -42,7 +45,7 @@ export function PostRow({ entry }: Props) {
               <span>{f.readingTime} min</span>
             </>
           ) : null}
-          {f.growth ? (
+          {f.type === 'note' && f.growth ? (
             <>
               <span aria-hidden className="text-ink-faint">
                 ·

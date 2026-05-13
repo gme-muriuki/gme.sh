@@ -2,16 +2,8 @@ import { useEffect, useState } from 'react'
 import type { ComponentType } from 'react'
 import { evaluate } from '@mdx-js/mdx'
 import { Fragment, jsx, jsxs } from 'react/jsx-runtime'
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import rehypeShiki from '@shikijs/rehype'
-import {
-  transformerNotationDiff,
-  transformerNotationFocus,
-  transformerNotationHighlight,
-} from '@shikijs/transformers'
 import { useMDXComponents } from '@mdx-js/react'
+import { runtimePlugins } from '@/app/mdx/pipeline'
 
 type EvalState = {
   Component: ComponentType | null
@@ -19,6 +11,12 @@ type EvalState = {
   pending: boolean
 }
 
+/**
+ * Compile and evaluate MDX source into a React component while exposing compilation state.
+ *
+ * @param source - The MDX source text to compile and execute
+ * @returns The current evaluation state: `Component` is the compiled React component or `null`, `error` is an error message string or `null`, and `pending` is `true` while compilation is in progress and `false` otherwise
+ */
 export function useMdxEval(source: string): EvalState {
   const [state, setState] = useState<EvalState>({
     Component: null,
@@ -41,25 +39,7 @@ export function useMdxEval(source: string): EvalState {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           jsxs: jsxs as any,
           useMDXComponents: () => components,
-          remarkPlugins: [remarkGfm, remarkMath],
-          rehypePlugins: [
-            rehypeKatex,
-            [
-              rehypeShiki,
-              {
-                themes: {
-                  light: 'catppuccin-latte',
-                  dark: 'catppuccin-mocha',
-                },
-                defaultColor: false,
-                transformers: [
-                  transformerNotationDiff(),
-                  transformerNotationHighlight(),
-                  transformerNotationFocus(),
-                ],
-              },
-            ],
-          ],
+          ...runtimePlugins,
         })) as { default: ComponentType }
 
         if (!cancelled) {

@@ -1,31 +1,33 @@
 import type { ReactNode } from 'react'
 import { format } from 'date-fns'
+import type { ShippedFrontmatter } from '*.mdx'
 import { Tags } from './Tags'
-
-type ShipLink = { label: string; href: string }
+import { Relations } from './Relations'
 
 type Props = {
-  title: string
-  dek?: string
-  date: string
-  hero?: string
-  links?: ShipLink[]
-  tags?: string[]
+  frontmatter: ShippedFrontmatter
   permalink: string
   children: ReactNode
 }
 
+/**
+ * Render the layout for a "shipped" article using provided MDX frontmatter and children.
+ *
+ * Renders a header with the shipped label, a formatted date from `frontmatter.date`, the main title,
+ * and optional dek, hero image, and external links; displays `children` as the article body;
+ * conditionally includes relations and a footer with tags and the permalink.
+ *
+ * @param frontmatter - Article frontmatter providing `title`, `date`, and optional `dek`, `hero`, `links`, `relations`, and `tags`
+ * @param permalink - The canonical URL displayed in the footer
+ * @param children - The article body content to render inside the layout
+ * @returns The article JSX element containing header, body, optional relations, and footer
+ */
 export function ShippedLayout({
-  title,
-  dek,
-  date,
-  hero,
-  links,
-  tags,
+  frontmatter: f,
   permalink,
   children,
 }: Props) {
-  const parsed = new Date(date)
+  const parsed = new Date(f.date)
   return (
     <article>
       <header className="mb-12">
@@ -36,23 +38,23 @@ export function ShippedLayout({
           {format(parsed, 'd MMM yyyy')}
         </p>
         <h1 className="mt-5 text-[2.875rem] font-bold tracking-tighter leading-[0.98] text-ink max-w-[20ch]">
-          {title}
+          {f.title}
         </h1>
-        {dek ? (
+        {f.dek ? (
           <p className="mt-5 max-w-[52ch] text-[1.125rem] text-ink-muted leading-snug">
-            {dek}
+            {f.dek}
           </p>
         ) : null}
-        {hero ? (
+        {f.hero ? (
           <img
-            src={hero}
+            src={f.hero}
             alt=""
             className="mt-8 rounded border border-rule w-full"
           />
         ) : null}
-        {links && links.length > 0 ? (
+        {f.links && f.links.length > 0 ? (
           <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 font-mono text-sm">
-            {links.map((link) => (
+            {f.links.map((link) => (
               <li key={link.href}>
                 <a
                   href={link.href}
@@ -68,8 +70,11 @@ export function ShippedLayout({
         ) : null}
       </header>
       <div className="prose-essay">{children}</div>
+      {f.relations && f.relations.length > 0 ? (
+        <Relations relations={f.relations} className="mt-14" />
+      ) : null}
       <footer className="mt-16 border-t border-rule pt-6">
-        <Tags tags={tags} />
+        <Tags tags={f.tags} />
         <p className="mt-3 font-mono text-[11px] text-ink-faint">
           permalink &mdash;{' '}
           <a

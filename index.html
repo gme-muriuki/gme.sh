@@ -3,12 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>James Muriuki</title>
+    <title>wellformed</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="theme-color" content="#FAF7F0" />
+    <meta name="theme-color" content="__THEME_LIGHT__" />
     <script>
       // no-flash theme init — runs before stylesheets paint.
-      // theme-color values must match THEME_COLOR in src/app/hooks/useTheme.tsx
+      // __THEME_LIGHT__ / __THEME_DARK__ are substituted by the
+      // theme-color-inject plugin in vite.config.ts from
+      // src/styles/theme-colors.ts.
       (function () {
         try {
           var stored = localStorage.getItem('theme');
@@ -20,7 +22,7 @@
           if (dark) root.classList.add('dark');
           root.style.colorScheme = dark ? 'dark' : 'light';
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.content = dark ? '#1A1714' : '#FAF7F0';
+          if (meta) meta.content = dark ? '__THEME_DARK__' : '__THEME_LIGHT__';
         } catch (_) {}
       })();
     </script>
