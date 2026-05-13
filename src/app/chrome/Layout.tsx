@@ -15,7 +15,10 @@ export function Layout() {
       <main id="main" className="flex-1">
         <div className="chrome-frame editorial-grid py-14">
           <Outlet />
-          <aside className="hidden lg:block" aria-hidden />
+          <aside
+            className="editorial-rail hidden lg:block"
+            aria-hidden="true"
+          />
         </div>
       </main>
       <Footer />

@@ -98,17 +98,13 @@
 
 /* --- sidenotes ----------------------------------------------------- */
 
-.sidenote-marker {
-  counter-increment: sidenote;
-  color: var(--brand);
-  font-family: var(--font-mono);
-  font-size: 0.65em;
-  font-weight: 600;
-  vertical-align: super;
-  line-height: 0;
-}
-.sidenote-marker::after {
-  content: counter(sidenote);
+/* Layout owns the rail (Layout.tsx renders an empty .editorial-rail aside
+ * as the second column of .editorial-grid). On desktop, Sidenote.tsx
+ * portals each note into the rail and positions it absolutely so its top
+ * aligns with the inline marker. On mobile it falls back to a popover. */
+
+.editorial-rail {
+  position: relative;
 }
 
 .sidenote-marker-btn {
@@ -116,50 +112,39 @@
   border: 0;
   padding: 0 0.05em;
   cursor: pointer;
-  display: inline-block;
+  display: inline;
+  line-height: 0;
+}
+
+.sidenote-marker {
+  color: var(--brand);
+  font-family: var(--font-mono);
+  font-size: 0.68em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  vertical-align: super;
+  line-height: 0;
 }
 
 .sidenote-margin {
-  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  font-family: var(--font-serif);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  font-feature-settings: 'onum';
+  letter-spacing: -0.003em;
 }
 
-@media (min-width: 1024px) {
-  .sidenote-margin {
-    display: block;
-    float: right;
-    clear: right;
-    width: 13rem;
-    margin-right: -16rem;
-    margin-top: 0.25em;
-    margin-left: 1rem;
-    margin-bottom: 0.75rem;
-    border-left: 1px solid var(--rule);
-    padding-left: 0.75rem;
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    line-height: 1.55;
-    color: var(--ink-muted);
-  }
-  .sidenote-margin .num {
-    color: var(--brand);
-    font-weight: 600;
-    margin-right: 0.4em;
-  }
-  .sidenote-margin .num::after {
-    content: counter(sidenote);
-  }
-}
-
-/* visually hide the marker counter increment in mobile branch */
-@media (max-width: 1023px) {
-  .sidenote-margin {
-    display: none;
-  }
-}
-
-/* hide popover content on lg+ since the margin annotation shows it */
-@media (min-width: 1024px) {
-  .sidenote-popover {
-    display: none !important;
-  }
+.sidenote-margin .num {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--brand);
+  letter-spacing: 0.05em;
+  vertical-align: 0.25em;
+  margin-right: 0.4em;
 }
