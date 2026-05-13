@@ -61,6 +61,30 @@ const mdShortcuts = keymap.of([
 type Props = {
   value: string
   onChange: (v: string) => void
+  /**
+   * Optional image upload hook. When provided, paste/drop of image
+   * files is intercepted: each file is handed to this callback and the
+   * returned URL is inserted as `![](url)` at the cursor.
+   */
+  onImageUpload?: (file: File) => Promise<string | null>
+}
+
+async function insertImages(
+  view: EditorView,
+  files: File[],
+  upload: (file: File) => Promise<string | null>,
+): Promise<void> {
+  for (const file of files) {
+    const url = await upload(file)
+    if (!url) continue
+    const insert = `![](${url})`
+    view.dispatch(
+      view.state.changeByRange((range) => ({
+        changes: { from: range.from, to: range.to, insert },
+        range: EditorSelection.cursor(range.from + insert.length),
+      })),
+    )
+  }
 }
 
 const theme = EditorView.theme({
@@ -117,15 +141,52 @@ const highlightStyle = HighlightStyle.define([
   { tag: t.processingInstruction, color: 'var(--ink-faint)' },
 ])
 
-export default function Editor({ value, onChange }: Props) {
+export default function Editor({ value, onChange, onImageUpload }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
+  const onImageUploadRef = useRef(onImageUpload)
+  onImageUploadRef.current = onImageUpload
 
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
+
+    const imageDrop = EditorView.domEventHandlers({
+      paste(event, view) {
+        const upload = onImageUploadRef.current
+        if (!upload) return false
+        const files: File[] = []
+        for (const item of event.clipboardData?.items ?? []) {
+          if (item.kind === 'file' && item.type.startsWith('image/')) {
+            const f = item.getAsFile()
+            if (f) files.push(f)
+          }
+        }
+        if (files.length === 0) return false
+        event.preventDefault()
+        void insertImages(view, files, upload)
+        return true
+      },
+      drop(event, view) {
+        const upload = onImageUploadRef.current
+        if (!upload) return false
+        const dt = event.dataTransfer
+        if (!dt) return false
+        const files = Array.from(dt.files).filter((f) =>
+          f.type.startsWith('image/'),
+        )
+        if (files.length === 0) return false
+        event.preventDefault()
+        const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
+        if (pos !== null) {
+          view.dispatch({ selection: { anchor: pos } })
+        }
+        void insertImages(view, files, upload)
+        return true
+      },
+    })
 
     const state = EditorState.create({
       doc: value,
@@ -139,6 +200,7 @@ export default function Editor({ value, onChange }: Props) {
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         theme,
         EditorView.lineWrapping,
+        imageDrop,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChangeRef.current(update.state.doc.toString())

@@ -42,16 +42,29 @@ export async function saveSource(
   return readJson<SaveResult>(r)
 }
 
-export async function uploadImage(
-  file: Blob,
-  ext: string,
-): Promise<UploadResult> {
+const MIME_TO_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/avif': 'avif',
+  'image/svg+xml': 'svg',
+}
+
+function extFromFile(file: File): string {
+  const name = file.name ?? ''
+  const dot = name.lastIndexOf('.')
+  if (dot >= 0 && dot < name.length - 1) return name.slice(dot + 1).toLowerCase()
+  return MIME_TO_EXT[file.type] ?? 'png'
+}
+
+export async function uploadImage(file: File): Promise<UploadResult> {
   if (!persistenceAvailable) return { ok: false, error: PROD_ERROR }
   const r = await fetch('/api/write/upload', {
     method: 'POST',
     headers: {
       'content-type': file.type || 'application/octet-stream',
-      'x-image-ext': ext,
+      'x-image-ext': extFromFile(file),
     },
     body: file,
   })

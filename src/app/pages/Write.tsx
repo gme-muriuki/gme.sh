@@ -26,6 +26,7 @@ import {
   patchFrontmatter,
 } from '@/app/write/frontmatter'
 import { useAutoSave, type SaveStatus } from '@/app/write/useAutoSave'
+import { uploadImage } from '@/app/write/persistence'
 import type { PostType } from '@/app/content-index'
 import type { RawMdxFrontmatter } from '*.mdx'
 
@@ -104,6 +105,14 @@ export default function Write() {
   const onPatch = useCallback((patch: Partial<RawMdxFrontmatter>) => {
     setSource((s) => patchFrontmatter(s, patch))
   }, [])
+
+  const onImageUpload = useCallback(
+    async (file: File): Promise<string | null> => {
+      const result = await uploadImage(file)
+      return result.ok ? result.url : null
+    },
+    [],
+  )
 
   const draftRef = useRef(parsed.frontmatter.draft === true)
   draftRef.current = parsed.frontmatter.draft === true
@@ -190,7 +199,11 @@ export default function Write() {
           >
             <div className="flex-1 min-h-0">
               <Suspense fallback={<EditorFallback />}>
-                <Editor value={source} onChange={setSource} />
+                <Editor
+                  value={source}
+                  onChange={setSource}
+                  onImageUpload={onImageUpload}
+                />
               </Suspense>
             </div>
             <StatusLine
