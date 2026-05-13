@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   EditorSelection,
   EditorState,
@@ -19,8 +19,14 @@ import {
   indentWithTab,
 } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
-import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
+import {
+  foldGutter,
+  foldKeymap,
+  syntaxHighlighting,
+  HighlightStyle,
+} from '@codemirror/language'
 import { tags as t } from '@lezer/highlight'
+import { cn } from '@/app/lib/cn'
 
 function wrap(prefix: string, suffix: string = prefix) {
   return (view: EditorView): boolean => {
@@ -257,6 +263,23 @@ const theme = EditorView.theme({
   '.cm-focusLineGutter': {
     color: 'var(--ink-muted)',
   },
+  '.cm-fold-marker': {
+    color: 'var(--ink-faint)',
+    cursor: 'pointer',
+    fontSize: '9px',
+    paddingInline: '2px',
+  },
+  '.cm-fold-marker:hover': {
+    color: 'var(--ink-muted)',
+  },
+  '.cm-foldPlaceholder': {
+    backgroundColor: 'transparent',
+    border: '1px dashed var(--rule)',
+    color: 'var(--ink-faint)',
+    padding: '0 0.4em',
+    fontSize: '11px',
+    fontFamily: 'var(--font-mono)',
+  },
   '.cm-selectionBackground, ::selection': {
     backgroundColor: 'var(--selection)',
   },
@@ -304,6 +327,36 @@ const highlightStyle = HighlightStyle.define([
   { tag: t.keyword, color: 'var(--ink)', fontWeight: '600' },
 ])
 
+type Heading = { line: number; level: number; text: string }
+
+function extractHeadings(source: string): Heading[] {
+  const out: Heading[] = []
+  const lines = source.split('\n')
+  let inFence = false
+  let inFrontmatter = false
+  for (let i = 0; i < lines.length; i++) {
+    const text = lines[i] ?? ''
+    if (i === 0 && text.trim() === '---') {
+      inFrontmatter = true
+      continue
+    }
+    if (inFrontmatter) {
+      if (text.trim() === '---') inFrontmatter = false
+      continue
+    }
+    if (text.startsWith('```')) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
+    const m = text.match(/^(#{1,6})\s+(.+?)\s*$/)
+    if (m && m[1] && m[2]) {
+      out.push({ line: i + 1, level: m[1].length, text: m[2] })
+    }
+  }
+  return out
+}
+
 export default function Editor({
   value,
   onChange,
@@ -318,6 +371,37 @@ export default function Editor({
   onImageUploadRef.current = onImageUpload
   const onGithubCiteRef = useRef(onGithubCite)
   onGithubCiteRef.current = onGithubCite
+  const [navOpen, setNavOpen] = useState(false)
+  const headings = useMemo(() => extractHeadings(value), [value])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        e.shiftKey &&
+        (e.key === 'o' || e.key === 'O')
+      ) {
+        e.preventDefault()
+        setNavOpen((v) => !v)
+      } else if (e.key === 'Escape' && navOpen) {
+        setNavOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [navOpen])
+
+  const jumpToLine = (line: number) => {
+    const view = viewRef.current
+    if (!view) return
+    const li = view.state.doc.line(line)
+    view.dispatch({
+      selection: { anchor: li.from },
+      effects: EditorView.scrollIntoView(li.from, { y: 'start' }),
+    })
+    view.focus()
+    setNavOpen(false)
+  }
 
   useEffect(() => {
     const host = hostRef.current
@@ -379,13 +463,26 @@ export default function Editor({
       doc: value,
       extensions: [
         lineNumbers(),
+        foldGutter({
+          markerDOM: (open) => {
+            const span = document.createElement('span')
+            span.className = 'cm-fold-marker'
+            span.textContent = open ? '▾' : '▸'
+            return span
+          },
+        }),
         history(),
         focusLine,
         mdxStructure,
         markdown(),
         syntaxHighlighting(highlightStyle),
         mdShortcuts,
-        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+        keymap.of([
+          ...defaultKeymap,
+          ...historyKeymap,
+          ...foldKeymap,
+          indentWithTab,
+        ]),
         theme,
         EditorView.lineWrapping,
         imageDrop,
@@ -418,5 +515,104 @@ export default function Editor({
     })
   }, [value])
 
-  return <div ref={hostRef} className="h-full min-h-0 overflow-hidden" />
+  return (
+    <div className="relative h-full min-h-0">
+      <div ref={hostRef} className="h-full min-h-0 overflow-hidden" />
+      {navOpen ? (
+        <HeadingNav
+          headings={headings}
+          onSelect={jumpToLine}
+          onClose={() => setNavOpen(false)}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function HeadingNav({
+  headings,
+  onSelect,
+  onClose,
+}: {
+  headings: Heading[]
+  onSelect: (line: number) => void
+  onClose: () => void
+}) {
+  const [query, setQuery] = useState('')
+  const [active, setActive] = useState(0)
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return q
+      ? headings.filter((h) => h.text.toLowerCase().includes(q))
+      : headings
+  }, [query, headings])
+
+  useEffect(() => {
+    setActive(0)
+  }, [query])
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onClose()
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActive((i) => Math.min(i + 1, filtered.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActive((i) => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const target = filtered[active]
+      if (target) onSelect(target.line)
+    }
+  }
+
+  return (
+    <div
+      onKeyDown={handleKey}
+      className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-[440px] max-w-[92%] bg-paper border border-rule rounded-sm shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+    >
+      <div className="p-3 border-b border-rule">
+        <input
+          autoFocus
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.currentTarget.value)}
+          placeholder="go to heading…"
+          className="w-full bg-transparent focus:outline-none text-sm placeholder:text-ink-faint"
+        />
+      </div>
+      <ul className="max-h-72 overflow-y-auto py-1">
+        {filtered.length === 0 ? (
+          <li className="px-3 py-2 text-ink-faint italic text-xs">
+            No matching headings
+          </li>
+        ) : (
+          filtered.map((h, i) => (
+            <li key={`${h.line}-${h.text}`}>
+              <button
+                type="button"
+                onMouseEnter={() => setActive(i)}
+                onClick={() => onSelect(h.line)}
+                style={{ paddingLeft: `${0.75 + (h.level - 1) * 0.85}rem` }}
+                className={cn(
+                  'w-full text-left pr-3 py-1 text-sm transition-colors',
+                  i === active
+                    ? 'bg-paper-raised text-ink'
+                    : 'text-ink-muted',
+                )}
+              >
+                <span className="font-mono text-[10px] text-ink-faint mr-2">
+                  H{h.level}
+                </span>
+                {h.text}
+              </button>
+            </li>
+          ))
+        )}
+      </ul>
+    </div>
+  )
 }
