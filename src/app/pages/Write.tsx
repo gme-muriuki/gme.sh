@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useDeferredValue,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -59,6 +60,8 @@ export default function Write() {
   >([])
   const [publishDialog, setPublishDialog] = useState(false)
   const [pendingSnapshot, setPendingSnapshot] = useState<string | null>(null)
+  const [focusMode, setFocusMode] = useState(false)
+  const [activePane, setActivePane] = useState<'editor' | 'preview'>('editor')
 
   const parsed = useMemo(() => parseFrontmatter(source), [source])
   const deferredSource = useDeferredValue(source)
@@ -142,6 +145,22 @@ export default function Write() {
     setPendingSnapshot(null)
   }, [pendingSnapshot, doLoadSnapshot])
 
+  // Cmd/Ctrl+. toggles focus mode; ESC always exits it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === '.') {
+        e.preventDefault()
+        setFocusMode((v) => !v)
+        return
+      }
+      if (e.key === 'Escape') {
+        setFocusMode((v) => (v ? false : v))
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const draftRef = useRef(parsed.frontmatter.draft === true)
   draftRef.current = parsed.frontmatter.draft === true
 
@@ -179,32 +198,51 @@ export default function Write() {
   const saveTick =
     autoSave.status.kind === 'saved' ? autoSave.status.at : 0
 
+  const dimEditor = mode === 'edit' && activePane !== 'editor'
+  const dimPreview = mode === 'edit' && activePane !== 'preview'
+
   return (
     <div className="flex flex-col h-screen min-h-0 bg-paper text-ink">
-      <Toolbar
-        currentFile={currentFile}
-        isModified={isModified}
-        isDraft={parsed.frontmatter.draft === true}
-        mode={mode}
-        onModeChange={setMode}
-        onPublishToggle={onPublishToggle}
-        panels={panels}
-        onTogglePanel={onTogglePanel}
-      />
+      {!focusMode ? (
+        <Toolbar
+          currentFile={currentFile}
+          isModified={isModified}
+          isDraft={parsed.frontmatter.draft === true}
+          mode={mode}
+          onModeChange={setMode}
+          onPublishToggle={onPublishToggle}
+          panels={panels}
+          onTogglePanel={onTogglePanel}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setFocusMode(false)}
+          aria-label="Exit focus mode"
+          title="Exit focus mode (ESC)"
+          className="fixed top-2 right-3 z-40 font-mono text-[10px] uppercase tracking-[0.22em] text-ink-faint hover:text-ink transition-colors"
+        >
+          esc · focus
+        </button>
+      )}
 
       <div
         className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[var(--lg-cols)] xl:grid-cols-[var(--xl-cols)]"
         style={
           {
-            '--lg-cols': panels.left ? '220px 1fr' : '1fr',
-            '--xl-cols': xlCols(panels),
+            '--lg-cols': focusMode
+              ? '1fr'
+              : panels.left
+                ? '220px 1fr'
+                : '1fr',
+            '--xl-cols': focusMode ? '1fr' : xlCols(panels),
           } as React.CSSProperties
         }
       >
         <div
           className={cn(
             'border-r border-rule min-h-0 overflow-hidden',
-            panels.left ? 'hidden lg:block' : 'hidden',
+            !focusMode && panels.left ? 'hidden lg:block' : 'hidden',
           )}
         >
           <Sidebar
@@ -222,9 +260,11 @@ export default function Write() {
           )}
         >
           <div
+            onPointerDown={() => setActivePane('editor')}
             className={cn(
-              'min-h-0 border-r border-rule',
+              'min-h-0 border-r border-rule transition-opacity duration-300 hover:opacity-100',
               mode === 'edit' ? 'flex flex-col' : 'hidden',
+              dimEditor ? 'opacity-40' : 'opacity-100',
             )}
           >
             <div className="flex-1 min-h-0">
@@ -246,9 +286,11 @@ export default function Write() {
           </div>
 
           <div
+            onPointerDown={() => setActivePane('preview')}
             className={cn(
-              'min-h-0 overflow-y-auto flex flex-col',
+              'min-h-0 overflow-y-auto flex flex-col transition-opacity duration-300 hover:opacity-100',
               mode === 'preview' ? 'block' : 'hidden md:flex',
+              dimPreview ? 'opacity-40' : 'opacity-100',
             )}
           >
             <div className="px-4 py-1.5 flex justify-center border-b border-rule bg-paper sticky top-0 z-10 shrink-0">
@@ -276,7 +318,7 @@ export default function Write() {
         <div
           className={cn(
             'border-l border-rule min-h-0 overflow-hidden',
-            panels.right ? 'hidden xl:block' : 'hidden',
+            !focusMode && panels.right ? 'hidden xl:block' : 'hidden',
           )}
         >
           <MetaPanel
