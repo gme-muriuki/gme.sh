@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { NoteFrontmatter } from '*.mdx'
 import { PostMeta } from './PostMeta'
 import { Tags } from './Tags'
+import { Relations } from './Relations'
 
 type Props = {
   frontmatter: NoteFrontmatter
@@ -19,6 +20,9 @@ export function NoteLayout({ frontmatter: f, permalink, children }: Props) {
         </h1>
       </header>
       <div className="prose-essay">{children}</div>
+      {f.relations && f.relations.length > 0 ? (
+        <Relations relations={f.relations} className="mt-12" />
+      ) : null}
       <footer className="mt-12 border-t border-rule pt-6">
         <Tags tags={f.tags} />
         <p className="mt-3 font-mono text-[11px] text-ink-faint">

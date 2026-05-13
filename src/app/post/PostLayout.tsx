@@ -63,6 +63,7 @@ export function combineFrontmatter(
     draft: fields.draft,
     ogImage: fields.ogImage,
     ogDescription: fields.ogDescription,
+    relations: fields.relations,
     readingTime: fields.readingTime,
     series: fields.series,
     growth: fields.growth,

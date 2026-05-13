@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { format } from 'date-fns'
-import type { RawMdxFrontmatter } from '*.mdx'
-import type { PostType } from '@/app/content-index'
+import type { Relation, RelationKind, RawMdxFrontmatter } from '*.mdx'
+import { allPosts, type PostType } from '@/app/content-index'
 import { SquareMark } from '@/app/chrome/SquareMark'
 import { cn } from '@/app/lib/cn'
+import { KIND_LABEL } from '@/app/post/Relations'
 import { listSnapshots, persistenceAvailable } from './persistence'
 
 type FmPatch = Partial<RawMdxFrontmatter>
@@ -185,6 +186,23 @@ export function MetaPanel({
         series={f.series}
         onCommit={(v) => onPatch({ series: v })}
       />
+
+      <Section title="relations">
+        <RelationsEditor
+          value={f.relations ?? []}
+          onCommit={(v) => onPatch({ relations: v.length > 0 ? v : undefined })}
+        />
+      </Section>
+
+      <datalist id="all-post-targets">
+        {allPosts.map((p) => (
+          <option
+            key={`${p.type}/${p.slug}`}
+            value={`${p.type}/${p.slug}`}
+            label={p.frontmatter.title}
+          />
+        ))}
+      </datalist>
 
       <Section title="seo">
         <Field label="og image">
@@ -459,6 +477,93 @@ function LinksRepeater({
         className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted hover:text-ink transition-colors"
       >
         + add link
+      </button>
+    </div>
+  )
+}
+
+function RelationsEditor({
+  value,
+  onCommit,
+}: {
+  value: Relation[]
+  onCommit: (v: Relation[]) => void
+}) {
+  const blank: Relation = { kind: 'influencedBy', target: '' }
+  const rows = useMemo(() => (value.length > 0 ? value : [blank]), [value])
+
+  const commit = (next: Relation[]) => {
+    onCommit(next.filter((r) => r.target.trim() !== ''))
+  }
+
+  const kinds = Object.entries(KIND_LABEL) as [RelationKind, string][]
+
+  return (
+    <div className="space-y-3">
+      {rows.map((row, i) => (
+        <div key={i} className="space-y-1.5">
+          <div className="flex items-baseline gap-2">
+            <select
+              value={row.kind}
+              onChange={(e) => {
+                const next = [...rows]
+                next[i] = {
+                  ...row,
+                  kind: e.currentTarget.value as RelationKind,
+                }
+                commit(next)
+              }}
+              className={cn(inputClass, 'w-1/2 shrink-0')}
+            >
+              {kinds.map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              list="all-post-targets"
+              defaultValue={row.target}
+              placeholder="essay/foo"
+              onBlur={(e) => {
+                const next = [...rows]
+                next[i] = { ...row, target: e.currentTarget.value.trim() }
+                commit(next)
+              }}
+              className={cn(inputClass, 'flex-1 min-w-0')}
+            />
+            <button
+              type="button"
+              onClick={() => commit(rows.filter((_, j) => j !== i))}
+              aria-label="remove relation"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint hover:text-brand px-1 transition-colors"
+            >
+              remove
+            </button>
+          </div>
+          <input
+            type="text"
+            defaultValue={row.note ?? ''}
+            placeholder="optional note"
+            onBlur={(e) => {
+              const next = [...rows]
+              const note = e.currentTarget.value.trim()
+              next[i] = { ...row, note: note || undefined }
+              commit(next)
+            }}
+            className={inputClass}
+          />
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() =>
+          commit([...rows, { kind: 'influencedBy', target: '' }])
+        }
+        className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted hover:text-ink transition-colors"
+      >
+        + add relation
       </button>
     </div>
   )

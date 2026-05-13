@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { format } from 'date-fns'
 import type { ShippedFrontmatter } from '*.mdx'
 import { Tags } from './Tags'
+import { Relations } from './Relations'
 
 type Props = {
   frontmatter: ShippedFrontmatter
@@ -57,6 +58,9 @@ export function ShippedLayout({
         ) : null}
       </header>
       <div className="prose-essay">{children}</div>
+      {f.relations && f.relations.length > 0 ? (
+        <Relations relations={f.relations} className="mt-14" />
+      ) : null}
       <footer className="mt-16 border-t border-rule pt-6">
         <Tags tags={f.tags} />
         <p className="mt-3 font-mono text-[11px] text-ink-faint">

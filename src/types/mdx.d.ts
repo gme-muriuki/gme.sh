@@ -1,6 +1,22 @@
 declare module '*.mdx' {
   import type { ComponentType } from 'react'
 
+  export type RelationKind =
+    | 'influencedBy'
+    | 'contradicts'
+    | 'evolvedFrom'
+    | 'evolvedInto'
+    | 'refinedInto'
+    | 'unresolvedBy'
+
+  export type Relation = {
+    kind: RelationKind
+    /** `<type>/<slug>` reference into the post catalogue. */
+    target: string
+    /** Optional clause that travels with the link, e.g. "on type erasure". */
+    note?: string
+  }
+
   type BaseFrontmatter = {
     title: string
     date: string
@@ -9,6 +25,7 @@ declare module '*.mdx' {
     draft?: boolean
     ogImage?: string
     ogDescription?: string
+    relations?: Relation[]
   }
 
   export type EssayFrontmatter = BaseFrontmatter & {

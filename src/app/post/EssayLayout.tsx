@@ -5,6 +5,7 @@ import { TableOfContents } from './TableOfContents'
 import { SeriesNav } from './SeriesNav'
 import { PostMeta } from './PostMeta'
 import { Tags } from './Tags'
+import { Relations } from './Relations'
 import { GiscusPlaceholder } from './GiscusPlaceholder'
 
 type Props = {
@@ -37,6 +38,9 @@ export function EssayLayout({ frontmatter: f, permalink, children }: Props) {
         <TableOfContents />
         <div className="prose-essay">{children}</div>
         {f.series ? <SeriesNav series={f.series} className="mt-14" /> : null}
+        {f.relations && f.relations.length > 0 ? (
+          <Relations relations={f.relations} className="mt-14" />
+        ) : null}
         <footer className="mt-16 border-t border-rule pt-6">
           <Tags tags={f.tags} />
           <p className="mt-3 font-mono text-[11px] text-ink-faint">
