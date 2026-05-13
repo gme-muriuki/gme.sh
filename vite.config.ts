@@ -8,6 +8,7 @@ import {
   THEME_COLOR_DARK,
   THEME_COLOR_LIGHT,
 } from './src/styles/theme-colors'
+import { writeBack } from './vite-plugins/write-back'
 
 // Substitutes the theme-color placeholders in index.html with the values
 // from src/styles/theme-colors.ts, so the no-flash inline script and
@@ -33,6 +34,7 @@ export default defineConfig({
       }),
     },
     themeColorInject(),
+    writeBack(),
     react(),
     tailwindcss(),
   ],
