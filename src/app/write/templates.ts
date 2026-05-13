@@ -1,9 +1,22 @@
 import type { PostType } from '@/app/content-index'
 
+/**
+ * Produces the current date string formatted as YYYY-MM-DD.
+ *
+ * @returns The current date in `YYYY-MM-DD` format (UTC)
+ */
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+/**
+ * Generate a Markdown/MDX post template for the given post type, with frontmatter populated using today's date.
+ *
+ * Produces a ready-to-edit string containing YAML frontmatter and a body scaffold appropriate to the selected `type`.
+ *
+ * @param type - The kind of post to generate: `'essay'` (long-form essay scaffold), `'note'` (short dated note), `'shipped'` (release note with links), or `'page'` (minimal static page)
+ * @returns The generated Markdown/MDX content as a string (YAML frontmatter plus body)
+ */
 export function makeTemplate(type: PostType): string {
   const date = today()
   switch (type) {

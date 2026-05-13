@@ -16,6 +16,12 @@ type GithubCitation = {
   lineRange: string | null
 }
 
+/**
+ * Parses a GitHub blob URL and extracts repository, ref, file path, and optional line range.
+ *
+ * @param url - The URL string to parse.
+ * @returns A `GithubCitation` with `repo` as `owner/name`, `ref` as the git ref, `path` as the file path within the repository, and `lineRange` as `Lstart–Lend`, `Lstart`, or `null` if no line fragment is present; returns `null` if the input is not a valid GitHub blob URL.
+ */
 function parseGithubCitation(url: string): GithubCitation | null {
   let u: URL
   try {
@@ -37,6 +43,16 @@ function parseGithubCitation(url: string): GithubCitation | null {
   }
 }
 
+/**
+ * Render a code block with an optional header showing filename, language, or a GitHub source citation, and a copy-to-clipboard control.
+ *
+ * The header is shown only when not inside file tabs and when at least one of `data-source`, `data-filename`, or `data-language` is provided. If `data-source` is a GitHub blob URL, it is parsed into `repo`, truncated `ref`, `path`, and an optional `lineRange` for display. The copy button copies the rendered `<pre>` text to the clipboard, sets a temporary "Copied" visual state for 1400ms, and silently ignores clipboard failures.
+ *
+ * @param props - Props forwarded to the underlying `<pre>` including `children` and `className`. Special optional data props:
+ *   - `data-filename` — filename to display in the header when no source citation is available.
+ *   - `data-language` — language label displayed in the header.
+ *   - `data-source` — GitHub blob URL to parse and display as a source citation (repo, ref, path, and optional line range).
+ */
 export function Pre(props: PreProps) {
   const insideTabs = useInsideFileTabs()
   const ref = useRef<HTMLPreElement>(null)

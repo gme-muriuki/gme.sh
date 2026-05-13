@@ -23,6 +23,17 @@ const TYPE_SHORT: Record<PostType, string> = {
 
 type SortKey = 'date' | 'title' | 'status'
 
+/**
+ * Render the editor sidebar for browsing, searching, sorting, and creating posts.
+ *
+ * Renders a searchable list of posts with optional sections for drafts, tags, and recent entries, and provides controls to change sort mode and create new posts.
+ *
+ * @param currentFile - The currently open file (type and slug) or `null` when none is selected.
+ * @param recent - An array of recent file references ({ type, slug }) used to populate the "recent" section.
+ * @param onSelect - Callback invoked with (type, slug) when a post is selected from the list.
+ * @param onNew - Callback invoked with a `PostType` when the user requests creating a new item.
+ * @returns The sidebar UI as a JSX element.
+ */
 export function Sidebar({ currentFile, recent, onSelect, onNew }: Props) {
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState<SortKey>('date')
@@ -215,6 +226,13 @@ export function Sidebar({ currentFile, recent, onSelect, onNew }: Props) {
   )
 }
 
+/**
+ * Render a titled section wrapper with a compact header and its children.
+ *
+ * @param title - The header text shown above the section content
+ * @param children - Content to display inside the section
+ * @returns A section element containing a small header row and the provided children
+ */
 function Section({
   title,
   children,
@@ -233,6 +251,14 @@ function Section({
   )
 }
 
+/**
+ * Render a clickable sidebar row for a post entry.
+ *
+ * @param entry - The post data used to display title, type, tags (series/growth), and draft state
+ * @param active - Whether the row is visually active/selected
+ * @param onSelect - Callback invoked with `(type, slug)` when the row is clicked
+ * @returns The button element representing the post entry row
+ */
 function PostItem({
   entry: p,
   active,
@@ -305,12 +331,26 @@ function PostItem({
   )
 }
 
+/**
+ * Renders a small, italicized paragraph for empty-state or helper text.
+ *
+ * @param children - Content to display inside the empty-line paragraph
+ * @returns A paragraph element styled for subtle, italicized helper text
+ */
 function EmptyLine({ children }: { children: React.ReactNode }) {
   return (
     <p className="px-1.5 py-1 text-[11px] text-ink-faint italic">{children}</p>
   )
 }
 
+/**
+ * Render a "+ new" control that toggles a menu of post types to create.
+ *
+ * The menu lists "essay", "note", "shipped", and "page"; selecting one invokes the provided callback and closes the menu.
+ *
+ * @param onNew - Callback called with the selected `PostType` when a menu item is clicked
+ * @returns A button that toggles a contextual menu of new-post type options
+ */
 function NewMenu({ onNew }: { onNew: (t: PostType) => void }) {
   const [open, setOpen] = useState(false)
   return (

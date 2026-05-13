@@ -30,14 +30,24 @@ const pageMods = import.meta.glob<Mod>('@/content/pages/*.mdx', {
 })
 
 /**
- * Extract the slug from an MDX file path (e.g. `/content/essays/foo.mdx`
- * -> `foo`). Falls back to the path itself if the regex doesn't match;
- * in practice every entry produced by `import.meta.glob('...mdx')` does.
+ * Extracts the filename (slug) without the `.mdx` extension from an MDX module path.
+ *
+ * @param path - The module path for an MDX file (for example `/content/essays/foo.mdx`).
+ * @returns The filename portion of `path` without the `.mdx` extension (for example `foo`), or `path` if a slug cannot be extracted.
  */
 export function slugFromPath(path: string): string {
   return path.match(/\/([^/]+)\.mdx$/)?.[1] ?? path
 }
 
+/**
+ * Convert a record of imported MDX modules into an array of `PostEntry` objects for the specified post type.
+ *
+ * The returned entries have `slug` derived from each module path and `frontmatter.type` injected with the provided `type`.
+ *
+ * @param mods - Record mapping module file paths to their imported module (`Mod`)
+ * @param type - The `PostType` to assign to every resulting entry
+ * @returns An array of `PostEntry` constructed from the provided modules
+ */
 function buildEntries(
   mods: Record<string, Mod>,
   type: PostType,

@@ -14,6 +14,15 @@ const typeShort = {
   page: 'page',
 } as const
 
+/**
+ * Render a single archive list row for a content entry.
+ *
+ * Displays the entry's formatted date, short type label, title, optional dek, and up to three tags,
+ * wrapped in a link to the entry's permalink.
+ *
+ * @param entry - The content entry to render; expected to include `frontmatter` (with `date`, `title`, optional `dek`, optional `tags`), `type`, and `slug`.
+ * @returns A list item element containing a linked archive row for the given entry.
+ */
 export function ArchiveRow({ entry }: Props) {
   const { frontmatter: f, type } = entry
   const href = permalink(type, entry.slug)

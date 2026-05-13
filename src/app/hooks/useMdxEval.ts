@@ -11,6 +11,12 @@ type EvalState = {
   pending: boolean
 }
 
+/**
+ * Compile and evaluate MDX source into a React component while exposing compilation state.
+ *
+ * @param source - The MDX source text to compile and execute
+ * @returns The current evaluation state: `Component` is the compiled React component or `null`, `error` is an error message string or `null`, and `pending` is `true` while compilation is in progress and `false` otherwise
+ */
 export function useMdxEval(source: string): EvalState {
   const [state, setState] = useState<EvalState>({
     Component: null,

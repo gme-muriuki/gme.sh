@@ -13,10 +13,14 @@ type Props = {
 }
 
 /**
- * Single seam between a post and its visual layout. Narrows on
- * `frontmatter.type` and delegates to the type-specific layout
- * component. Adding a new post type means adding a layout and one
- * case here — callers (PostPage, /write Preview) do not change.
+ * Selects and renders the layout component corresponding to a post's `frontmatter.type`.
+ *
+ * Delegates rendering to the appropriate type-specific layout and places `children` inside it.
+ *
+ * @param frontmatter - The post's frontmatter used to determine and supply data to the chosen layout
+ * @param permalink - The post's permalink, forwarded to layouts that require it
+ * @param children - Rendered post content passed into the selected layout
+ * @returns A React element for the selected post layout
  */
 export function PostLayout({ frontmatter: f, permalink, children }: Props) {
   switch (f.type) {
@@ -44,10 +48,11 @@ export function PostLayout({ frontmatter: f, permalink, children }: Props) {
 }
 
 /**
- * Combine a known post type with a loose, possibly-incomplete set of
- * frontmatter fields into a fully-typed Frontmatter. Used by /write,
- * where the type comes from UI state and the fields from the editor
- * source. Fills sane defaults for required base fields.
+ * Create a fully-populated Frontmatter object for a given post type by applying defaults to missing editor-provided fields.
+ *
+ * @param type - The post `type` to assign to the resulting frontmatter.
+ * @param fields - Partial frontmatter values from the editor; missing `title` and `date` will be filled with defaults.
+ * @returns A `Frontmatter` object with `type` set to `type`, `title` defaulting to `"Untitled"` when absent, `date` defaulting to today's date in `YYYY-MM-DD` format, and all other optional fields copied from `fields`.
  */
 export function combineFrontmatter(
   type: PostType,

@@ -28,14 +28,11 @@ export type AutoSave = {
 const DEBOUNCE_MS = 2_000
 
 /**
- * Debounced write-through to /api/write/source. Treats the value of
- * `source` at the moment `target` last changed as the baseline; later
- * edits flip to `unsaved`, then `saving`, then `saved` after the request
- * resolves. A target change cancels any pending timer and resets the
- * baseline, so opening a new file doesn't immediately trigger a save.
+ * Debounces and persists `source` for the given `target`, avoiding redundant writes and exposing save state and a flush method.
  *
- * In prod / non-dev the hook stays at `idle` since the endpoint isn't
- * mounted.
+ * @param target - The resource identifier (type and slug). When `null` or `undefined`, saving is disabled and the hook remains idle.
+ * @param source - The current text content to be saved.
+ * @returns An object with `status` describing the save lifecycle (`idle`, `unsaved`, `saving`, `saved`, or `error`) and `flush(override)` to cancel any pending debounce and immediately persist the provided content.
  */
 export function useAutoSave(target: Target, source: string): AutoSave {
   const [status, setStatus] = useState<SaveStatus>({ kind: 'idle' })

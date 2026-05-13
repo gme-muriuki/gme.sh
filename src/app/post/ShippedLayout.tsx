@@ -10,6 +10,18 @@ type Props = {
   children: ReactNode
 }
 
+/**
+ * Render the layout for a "shipped" article using provided MDX frontmatter and children.
+ *
+ * Renders a header with the shipped label, a formatted date from `frontmatter.date`, the main title,
+ * and optional dek, hero image, and external links; displays `children` as the article body;
+ * conditionally includes relations and a footer with tags and the permalink.
+ *
+ * @param frontmatter - Article frontmatter providing `title`, `date`, and optional `dek`, `hero`, `links`, `relations`, and `tags`
+ * @param permalink - The canonical URL displayed in the footer
+ * @param children - The article body content to render inside the layout
+ * @returns The article JSX element containing header, body, optional relations, and footer
+ */
 export function ShippedLayout({
   frontmatter: f,
   permalink,

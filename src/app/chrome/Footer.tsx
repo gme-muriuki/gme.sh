@@ -2,6 +2,11 @@ import { SquareMark } from './SquareMark'
 
 const year = new Date().getFullYear()
 
+/**
+ * Render the site footer containing the wordmark, contact/social links, and the current year.
+ *
+ * @returns A JSX footer element with the styled wordmark, mailto/GitHub/rss links, decorative separators, and copyright year.
+ */
 export function Footer() {
   return (
     <footer className="mt-24 border-t border-rule">

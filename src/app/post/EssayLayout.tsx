@@ -14,6 +14,14 @@ type Props = {
   children: ReactNode
 }
 
+/**
+ * Render the complete essay page layout using the provided frontmatter and permalink.
+ *
+ * @param frontmatter - The essay's frontmatter (title, dek, series, tags, relations, etc.) used to populate the header, meta, table of contents, related sections, and footer.
+ * @param permalink - The canonical URL for the essay shown and linked in the footer.
+ * @param children - The essay content to render inside the main prose container.
+ * @returns The React element representing the assembled essay page layout.
+ */
 export function EssayLayout({ frontmatter: f, permalink, children }: Props) {
   return (
     <>

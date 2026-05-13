@@ -21,6 +21,13 @@ const pageRaw = import.meta.glob<string>('@/content/pages/*.mdx', {
   eager: true,
 })
 
+/**
+ * Map raw module contents to keys formatted as `<type>/<slug>`.
+ *
+ * @param mods - Mapping from module file path to raw content string.
+ * @param type - Post type used as the key prefix (e.g., `essay`, `note`, `shipped`, `page`).
+ * @returns A record whose keys are ``${type}/${slug}`` and whose values are the corresponding raw content strings.
+ */
 function build(mods: Record<string, string>, type: PostType): Record<string, string> {
   const out: Record<string, string> = {}
   for (const [path, raw] of Object.entries(mods)) {

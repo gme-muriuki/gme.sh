@@ -28,36 +28,80 @@ const MIME_TO_EXT: Record<string, string> = {
   'image/svg+xml': 'svg',
 }
 
+/**
+ * Determines whether a string is a valid post type.
+ *
+ * @param s - Candidate post type string
+ * @returns `true` if `s` matches one of the allowed post types (`'essay'`, `'note'`, `'shipped'`, `'page'`), `false` otherwise.
+ */
 function isPostType(s: string): s is PostType {
   return (POST_TYPES as readonly string[]).includes(s)
 }
 
+/**
+ * Determines whether `child` is located strictly inside the `parent` directory.
+ *
+ * @param parent - Path of the parent directory
+ * @param child - Path to test for containment within `parent`
+ * @returns `true` if `child` is a nested path beneath `parent`, `false` otherwise.
+ */
 function isInside(parent: string, child: string): boolean {
   const rel = path.relative(parent, child)
   return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel)
 }
 
+/**
+ * Collects the entire request body stream and returns it as a single Buffer.
+ *
+ * @returns A `Buffer` containing the full request body
+ */
 async function readBody(req: IncomingMessage): Promise<Buffer> {
   const chunks: Buffer[] = []
   for await (const chunk of req) chunks.push(chunk as Buffer)
   return Buffer.concat(chunks)
 }
 
+/**
+ * Parse the incoming request body as JSON and return the resulting value.
+ *
+ * @param req - The incoming HTTP request whose body will be read and parsed.
+ * @returns The parsed JSON value from the request body.
+ */
 async function readJson<T>(req: IncomingMessage): Promise<T> {
   const buf = await readBody(req)
   return JSON.parse(buf.toString('utf-8')) as T
 }
 
+/**
+ * Send a JSON response with the given HTTP status code.
+ *
+ * @param status - HTTP status code to set on the response
+ * @param body - Value to serialize as JSON into the response body
+ */
 function send(res: ServerResponse, status: number, body: unknown): void {
   res.statusCode = status
   res.setHeader('content-type', 'application/json; charset=utf-8')
   res.end(JSON.stringify(body))
 }
 
+/**
+ * Determines whether a request URL targets the root path.
+ *
+ * @param url - The request URL string or `undefined`; `undefined` is treated as the root.
+ * @returns `true` if `url` is `'/'`, `''`, or `undefined`, `false` otherwise.
+ */
 function isRootPath(url: string | undefined): boolean {
   return url === '/' || url === '' || url === undefined
 }
 
+/**
+ * Map a Content-Type MIME string to a common file extension.
+ *
+ * Parses the MIME type (ignoring any `;` parameters) and returns the corresponding file extension.
+ *
+ * @param mime - MIME type or `Content-Type` header value (may include parameters like `charset`)
+ * @returns The mapped extension (for example, `png`) or `undefined` if the MIME type is not recognized
+ */
 function extFromMime(mime: string): string | undefined {
   const m = mime.split(';')[0]?.trim().toLowerCase()
   return m ? MIME_TO_EXT[m] : undefined
@@ -72,6 +116,12 @@ type GithubBlob = {
   endLine?: number
 }
 
+/**
+ * Parses a GitHub "blob" URL and extracts owner, repository, ref, file path, and optional line range.
+ *
+ * @param raw - The URL string to parse (expected form: `https://github.com/:owner/:repo/blob/:ref/:path[#Lstart[-Lend]]`)
+ * @returns An object with `owner`, `repo`, `ref`, `path`, and optional `startLine`/`endLine` when the URL fragment is `#L<start>` or `#L<start>-L<end>`, or `null` if `raw` is not a valid GitHub blob URL.
+ */
 function parseGithubBlobUrl(raw: string): GithubBlob | null {
   let u: URL
   try {
@@ -134,6 +184,12 @@ const EXT_TO_LANG: Record<string, string> = {
   zig: 'zig',
 }
 
+/**
+ * Determine a language identifier from a file path or filename's extension.
+ *
+ * @param path - File path or filename to infer the language from
+ * @returns The language identifier mapped from the file extension, or `'text'` if the extension is unknown
+ */
 function langFromPath(path: string): string {
   const ext = path.split('.').pop()?.toLowerCase() ?? ''
   return EXT_TO_LANG[ext] ?? 'text'

@@ -8,6 +8,12 @@ type Props = {
   type: 'essay' | 'note' | 'shipped'
 }
 
+/**
+ * Render the post page for the specified post type and route slug.
+ *
+ * @param type - The post type to render (e.g., `'essay' | 'note' | 'shipped'`); used to locate the content entry for the current route slug.
+ * @returns A React element containing the requested post wrapped in `PostLayout` when the slug matches an entry, or a `NotHere` fallback when the slug is missing or the entry is not found.
+ */
 export default function PostPage({ type }: Props) {
   const { slug } = useParams<{ slug: string }>()
   const entry = slug ? findPost(type, slug) : undefined

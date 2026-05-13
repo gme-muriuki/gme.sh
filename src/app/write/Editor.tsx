@@ -28,6 +28,13 @@ import {
 import { tags as t } from '@lezer/highlight'
 import { cn } from '@/app/lib/cn'
 
+/**
+ * Create a CodeMirror command that wraps the current selection with `prefix` and `suffix`.
+ *
+ * @param prefix - Text to insert before the selection
+ * @param suffix - Text to insert after the selection; defaults to `prefix`
+ * @returns A command function which, when invoked with an `EditorView`, wraps the selection, places the cursor inside the wrapped content, focuses the editor, and returns `true`
+ */
 function wrap(prefix: string, suffix: string = prefix) {
   return (view: EditorView): boolean => {
     view.dispatch(
@@ -46,6 +53,12 @@ function wrap(prefix: string, suffix: string = prefix) {
   }
 }
 
+/**
+ * Wraps the current selection (or the literal "text" when the selection is empty) as a Markdown link and selects the placeholder URL portion.
+ *
+ * @param view - The CodeMirror EditorView to modify
+ * @returns `true`
+ */
 function wrapLink(view: EditorView): boolean {
   view.dispatch(
     view.state.changeByRange((range) => {
@@ -188,6 +201,12 @@ type Props = {
   onGithubCite?: (url: string) => Promise<string | null>
 }
 
+/**
+ * Replace the current selection with the given text and move the cursor to the end of the insertion.
+ *
+ * @param view - The CodeMirror EditorView whose document will be changed
+ * @param text - The text to insert in place of the current selection
+ */
 function insertText(view: EditorView, text: string): void {
   view.dispatch(
     view.state.changeByRange((range) => ({
@@ -197,6 +216,13 @@ function insertText(view: EditorView, text: string): void {
   )
 }
 
+/**
+ * Uploads each file and inserts a Markdown image `![](url)` at the editor selection for each successful upload.
+ *
+ * @param view - The EditorView to insert image markdown into
+ * @param files - Files to upload and insert
+ * @param upload - Async uploader that returns the image URL on success or `null` to skip insertion
+ */
 async function insertImages(
   view: EditorView,
   files: File[],
@@ -329,6 +355,14 @@ const highlightStyle = HighlightStyle.define([
 
 type Heading = { line: number; level: number; text: string }
 
+/**
+ * Extracts Markdown headings from a source string, preserving their line numbers and levels.
+ *
+ * Scans the document for ATX-style headings (`#` through `######`), ignoring content inside a leading YAML frontmatter block and fenced code blocks. Each heading's text excludes the leading hashes and surrounding trailing whitespace.
+ *
+ * @param source - The Markdown/MDX source text to scan.
+ * @returns An array of headings where each entry contains `line` (1-based line number), `level` (1–6 number of `#`), and `text` (heading title).
+ */
 function extractHeadings(source: string): Heading[] {
   const out: Heading[] = []
   const lines = source.split('\n')
@@ -357,6 +391,17 @@ function extractHeadings(source: string): Heading[] {
   return out
 }
 
+/**
+ * Render a CodeMirror-based markdown/MDX editor with custom decorations, shortcuts, image handling, and a heading navigator.
+ *
+ * The editor supports wrapping shortcuts (bold/italic/code), converting selections into markdown links, highlighting frontmatter and MDX component lines, and selecting the active line. When `onImageUpload` is provided, pasted or dropped image files are uploaded and inserted as `![](url)`; when `onGithubCite` is provided, pasted GitHub blob URLs are converted to markdown via the callback and inserted. The heading navigator can be toggled with Ctrl/Meta+Shift+O and jumps the editor to the selected heading.
+ *
+ * @param value - The controlled editor text value.
+ * @param onChange - Callback invoked with the new document text whenever the editor content changes.
+ * @param onImageUpload - Optional. Receives an image `File` and should return a Promise resolving to an uploaded URL string or `null`. When present, pasted/dropped images are uploaded and inserted as markdown image links.
+ * @param onGithubCite - Optional. Receives a GitHub blob URL and should return a Promise resolving to markdown text or `null`. When present, pasted GitHub blob URLs are converted to markdown and inserted.
+ * @returns The React element mounting the editor.
+ */
 export default function Editor({
   value,
   onChange,
@@ -529,6 +574,17 @@ export default function Editor({
   )
 }
 
+/**
+ * Renders a searchable, keyboard-navigable overlay for jumping to document headings.
+ *
+ * Displays `headings` in a filterable list, supports arrow-key navigation, Enter to select,
+ * and Escape to close the overlay.
+ *
+ * @param headings - Array of heading objects to display (each with `line`, `level`, and `text`).
+ * @param onSelect - Called with the selected heading's line number when the user activates an item.
+ * @param onClose - Called to request closing the overlay (also invoked on Escape).
+ * @returns The heading navigation overlay element.
+ */
 function HeadingNav({
   headings,
   onSelect,

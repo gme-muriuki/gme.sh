@@ -16,6 +16,19 @@ type Props = {
   onTogglePanel: (side: 'left' | 'right') => void
 }
 
+/**
+ * Render the editor toolbar with file path, mode tabs, publish/draft control, search trigger, and left/right panel toggles.
+ *
+ * @param currentFile - The active file (type and slug) or `null` when no file is selected
+ * @param isModified - Whether the current file has unsaved modifications
+ * @param isDraft - Whether the current file is marked as a draft
+ * @param mode - The current editor mode (`'edit'` or `'preview'`)
+ * @param onModeChange - Called with the new mode when the user switches tabs
+ * @param onPublishToggle - Called when the publish/mark-draft button is clicked
+ * @param panels - Visibility state for the left and right panels
+ * @param onTogglePanel - Called with `'left'` or `'right'` to toggle the corresponding panel
+ * @returns A JSX element representing the toolbar
+ */
 export function Toolbar({
   currentFile,
   isModified,
@@ -81,6 +94,13 @@ export function Toolbar({
   )
 }
 
+/**
+ * Render mode selection tabs for "edit" and "preview".
+ *
+ * @param mode - The currently active mode, either `"edit"` or `"preview"`.
+ * @param onChange - Callback invoked with the newly selected mode when a tab is clicked.
+ * @returns The tab group element that lets the user switch between edit and preview modes.
+ */
 function ModeTabs({
   mode,
   onChange,
@@ -101,6 +121,11 @@ function ModeTabs({
   )
 }
 
+/**
+ * Renders a tab-styled button that displays a label and reflects its active state.
+ *
+ * @returns A button element that shows `value`, exposes the active state via `aria-pressed`, and invokes `onClick` when pressed.
+ */
 function Tab({
   value,
   active,
@@ -125,6 +150,14 @@ function Tab({
   )
 }
 
+/**
+ * Render a publish/draft button whose label, title, and styling reflect the `draft` and `disabled` states.
+ *
+ * @param draft - If `true`, the control indicates publishing (label "Publish"); otherwise indicates marking as draft (label "Mark draft").
+ * @param disabled - If `true`, the control is disabled and shows the tooltip "Save the draft first (assign a slug)".
+ * @param onClick - Invoked when the button is clicked.
+ * @returns The button element representing the publish/draft control.
+ */
 function PublishButton({
   draft,
   disabled,

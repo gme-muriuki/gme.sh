@@ -2,6 +2,11 @@ import { Outlet, ScrollRestoration } from 'react-router'
 import { Header } from './Header'
 import { Footer } from './Footer'
 
+/**
+ * Render the application page scaffold including accessibility skip link, header, main content, optional right rail, and footer.
+ *
+ * @returns The top-level React element that composes the page layout: a container with a "Skip to content" anchor, <Header />, a <main id="main"> wrapping the route <Outlet /> and a right-side <aside> rail (hidden on small screens), <Footer />, and <ScrollRestoration />.
+ */
 export function Layout() {
   return (
     <div className="flex min-h-full flex-col">
