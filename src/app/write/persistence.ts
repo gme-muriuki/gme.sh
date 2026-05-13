@@ -107,3 +107,29 @@ export async function loadSnapshot(
   )
   return readJson<SnapshotLoad>(r)
 }
+
+export type GithubCitation =
+  | {
+      ok: true
+      content: string
+      lang: string
+      owner: string
+      repo: string
+      ref: string
+      path: string
+      startLine: number
+      endLine: number
+      truncated: boolean
+    }
+  | { ok: false; error: string }
+
+export async function fetchGithub(url: string): Promise<GithubCitation> {
+  if (!persistenceAvailable) return { ok: false, error: PROD_ERROR }
+  const r = await fetch(
+    `/api/write/github?url=${encodeURIComponent(url)}`,
+  )
+  return readJson<GithubCitation>(r)
+}
+
+export const GITHUB_BLOB_RE =
+  /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/blob\/[\w./-]+(?:#L\d+(?:-L\d+)?)?$/

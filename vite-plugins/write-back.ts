@@ -63,6 +63,86 @@ function extFromMime(mime: string): string | undefined {
   return m ? MIME_TO_EXT[m] : undefined
 }
 
+type GithubBlob = {
+  owner: string
+  repo: string
+  ref: string
+  path: string
+  startLine?: number
+  endLine?: number
+}
+
+function parseGithubBlobUrl(raw: string): GithubBlob | null {
+  let u: URL
+  try {
+    u = new URL(raw)
+  } catch {
+    return null
+  }
+  if (u.hostname !== 'github.com') return null
+  const parts = u.pathname.split('/').filter(Boolean)
+  if (parts.length < 5 || parts[2] !== 'blob') return null
+  const owner = parts[0]
+  const repo = parts[1]
+  const ref = parts[3]
+  if (!owner || !repo || !ref) return null
+  const path = parts.slice(4).join('/')
+  if (!path) return null
+  const m = u.hash.match(/^#L(\d+)(?:-L(\d+))?$/)
+  return {
+    owner,
+    repo,
+    ref,
+    path,
+    startLine: m ? Number(m[1]) : undefined,
+    endLine: m && m[2] ? Number(m[2]) : m ? Number(m[1]) : undefined,
+  }
+}
+
+const EXT_TO_LANG: Record<string, string> = {
+  rs: 'rust',
+  ts: 'ts',
+  tsx: 'tsx',
+  js: 'js',
+  jsx: 'jsx',
+  py: 'python',
+  go: 'go',
+  c: 'c',
+  h: 'c',
+  hpp: 'cpp',
+  cpp: 'cpp',
+  cc: 'cpp',
+  java: 'java',
+  kt: 'kotlin',
+  rb: 'ruby',
+  php: 'php',
+  sh: 'bash',
+  bash: 'bash',
+  zsh: 'bash',
+  yml: 'yaml',
+  yaml: 'yaml',
+  toml: 'toml',
+  json: 'json',
+  md: 'markdown',
+  mdx: 'mdx',
+  css: 'css',
+  scss: 'scss',
+  html: 'html',
+  sql: 'sql',
+  lua: 'lua',
+  swift: 'swift',
+  zig: 'zig',
+}
+
+function langFromPath(path: string): string {
+  const ext = path.split('.').pop()?.toLowerCase() ?? ''
+  return EXT_TO_LANG[ext] ?? 'text'
+}
+
+// Hard cap to keep an accidental paste of a 50k-line file from filling
+// the doc. 400 lines is well past anything legibly cited.
+const MAX_CITATION_LINES = 400
+
 /**
  * Dev-only write-back endpoints for /write.
  *
@@ -71,6 +151,7 @@ function extFromMime(mime: string): string | undefined {
  * - POST /api/write/snapshot            { type, slug, source }       -> { ok, timestamp }
  * - GET  /api/write/snapshots/:t/:s                                  -> { ok, snapshots }
  * - GET  /api/write/snapshots/:t/:s/:ts                              -> { ok, source }
+ * - GET  /api/write/github?url=...                                   -> { ok, content, lang, ... }
  *
  * `apply: 'serve'` keeps the plugin out of `vite build`, so production
  * never gains a write surface. When the app ports to Next.js, these
@@ -179,6 +260,47 @@ export function writeBack(): Plugin {
           await mkdir(folder, { recursive: true })
           await writeFile(target, source, 'utf-8')
           send(res, 200, { ok: true, timestamp: stamp })
+        } catch (err) {
+          send(res, 500, { ok: false, error: (err as Error).message })
+        }
+      })
+
+      server.middlewares.use('/api/write/github', async (req, res, next) => {
+        if (req.method !== 'GET') return next()
+        try {
+          const url = new URL(req.url ?? '/', 'http://x').searchParams.get(
+            'url',
+          )
+          if (!url) return send(res, 400, { ok: false, error: 'no-url' })
+          const parsed = parseGithubBlobUrl(url)
+          if (!parsed) return send(res, 400, { ok: false, error: 'bad-url' })
+
+          const raw = `https://raw.githubusercontent.com/${parsed.owner}/${parsed.repo}/${parsed.ref}/${parsed.path}`
+          const r = await fetch(raw)
+          if (!r.ok) {
+            return send(res, 502, {
+              ok: false,
+              error: `github-fetch-${r.status}`,
+            })
+          }
+          const text = await r.text()
+          const lines = text.split('\n')
+          const start = parsed.startLine ?? 1
+          const requestedEnd = parsed.endLine ?? lines.length
+          const end = Math.min(requestedEnd, start + MAX_CITATION_LINES - 1)
+          const content = lines.slice(start - 1, end).join('\n')
+          send(res, 200, {
+            ok: true,
+            content,
+            lang: langFromPath(parsed.path),
+            owner: parsed.owner,
+            repo: parsed.repo,
+            ref: parsed.ref,
+            path: parsed.path,
+            startLine: start,
+            endLine: end,
+            truncated: end < requestedEnd,
+          })
         } catch (err) {
           send(res, 500, { ok: false, error: (err as Error).message })
         }

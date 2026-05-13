@@ -27,7 +27,11 @@ import {
   patchFrontmatter,
 } from '@/app/write/frontmatter'
 import { useAutoSave, type SaveStatus } from '@/app/write/useAutoSave'
-import { loadSnapshot, uploadImage } from '@/app/write/persistence'
+import {
+  fetchGithub,
+  loadSnapshot,
+  uploadImage,
+} from '@/app/write/persistence'
 import type { PostType } from '@/app/content-index'
 import type { RawMdxFrontmatter } from '*.mdx'
 
@@ -114,6 +118,16 @@ export default function Write() {
     async (file: File): Promise<string | null> => {
       const result = await uploadImage(file)
       return result.ok ? result.url : null
+    },
+    [],
+  )
+
+  const onGithubCite = useCallback(
+    async (url: string): Promise<string | null> => {
+      const r = await fetchGithub(url)
+      if (!r.ok) return null
+      const canonical = `https://github.com/${r.owner}/${r.repo}/blob/${r.ref}/${r.path}#L${r.startLine}-L${r.endLine}`
+      return '```' + r.lang + ' source=' + canonical + '\n' + r.content + '\n```\n'
     },
     [],
   )
@@ -273,6 +287,7 @@ export default function Write() {
                   value={source}
                   onChange={setSource}
                   onImageUpload={onImageUpload}
+                  onGithubCite={onGithubCite}
                 />
               </Suspense>
             </div>

@@ -18,9 +18,16 @@ import type { CompileOptions } from '@mdx-js/mdx'
 type PluginList = NonNullable<CompileOptions['remarkPlugins']>
 
 /**
- * Reads `` ```rust src/lib.rs `` style meta on fenced code blocks and
- * attaches the language + filename to the rendered <pre> via data-* attrs.
- * Pre.tsx reads those to render its filename/language chrome.
+ * Reads fenced-block meta and projects it onto the rendered <pre> via
+ * data-* attrs that Pre.tsx renders as figcaption chrome.
+ *
+ * Recognised forms on the info line, after the language:
+ *   ```rust src/lib.rs                                     (bare filename)
+ *   ```rust filename=src/lib.rs                            (key=value)
+ *   ```rust source=https://github.com/.../blob/...#L1-L20  (github citation)
+ *
+ * Bare path tokens are kept for backwards compatibility with the
+ * pre-citation authoring style.
  */
 const transformerMetadata: ShikiTransformer = {
   name: 'metadata',
@@ -28,9 +35,18 @@ const transformerMetadata: ShikiTransformer = {
     const lang = this.options.lang
     if (lang) node.properties['data-language'] = lang
     const meta = (this.options.meta as { __raw?: string } | undefined)?.__raw
-    if (meta) {
-      const tok = meta.split(/\s+/).find((s) => /[./]/.test(s))
-      if (tok) node.properties['data-filename'] = tok
+    if (!meta) return
+    for (const tok of meta.split(/\s+/)) {
+      if (!tok) continue
+      const eq = tok.indexOf('=')
+      if (eq < 0) {
+        if (/[./]/.test(tok)) node.properties['data-filename'] = tok
+        continue
+      }
+      const key = tok.slice(0, eq)
+      const val = tok.slice(eq + 1)
+      if (key === 'filename') node.properties['data-filename'] = val
+      else if (key === 'source') node.properties['data-source'] = val
     }
   },
 }

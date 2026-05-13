@@ -173,6 +173,22 @@ type Props = {
    * returned URL is inserted as `![](url)` at the cursor.
    */
   onImageUpload?: (file: File) => Promise<string | null>
+  /**
+   * Optional GitHub blob-URL importer. When provided, pasting a
+   * `github.com/.../blob/...#Lx-Ly` URL is intercepted: the callback
+   * fetches the source range and returns the markdown to insert (a code
+   * fence with attribution meta), or null to skip.
+   */
+  onGithubCite?: (url: string) => Promise<string | null>
+}
+
+function insertText(view: EditorView, text: string): void {
+  view.dispatch(
+    view.state.changeByRange((range) => ({
+      changes: { from: range.from, to: range.to, insert: text },
+      range: EditorSelection.cursor(range.from + text.length),
+    })),
+  )
 }
 
 async function insertImages(
@@ -183,13 +199,7 @@ async function insertImages(
   for (const file of files) {
     const url = await upload(file)
     if (!url) continue
-    const insert = `![](${url})`
-    view.dispatch(
-      view.state.changeByRange((range) => ({
-        changes: { from: range.from, to: range.to, insert },
-        range: EditorSelection.cursor(range.from + insert.length),
-      })),
-    )
+    insertText(view, `![](${url})`)
   }
 }
 
@@ -294,13 +304,20 @@ const highlightStyle = HighlightStyle.define([
   { tag: t.keyword, color: 'var(--ink)', fontWeight: '600' },
 ])
 
-export default function Editor({ value, onChange, onImageUpload }: Props) {
+export default function Editor({
+  value,
+  onChange,
+  onImageUpload,
+  onGithubCite,
+}: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
   const onImageUploadRef = useRef(onImageUpload)
   onImageUploadRef.current = onImageUpload
+  const onGithubCiteRef = useRef(onGithubCite)
+  onGithubCiteRef.current = onGithubCite
 
   useEffect(() => {
     const host = hostRef.current
@@ -309,18 +326,35 @@ export default function Editor({ value, onChange, onImageUpload }: Props) {
     const imageDrop = EditorView.domEventHandlers({
       paste(event, view) {
         const upload = onImageUploadRef.current
-        if (!upload) return false
-        const files: File[] = []
-        for (const item of event.clipboardData?.items ?? []) {
-          if (item.kind === 'file' && item.type.startsWith('image/')) {
-            const f = item.getAsFile()
-            if (f) files.push(f)
+        if (upload) {
+          const files: File[] = []
+          for (const item of event.clipboardData?.items ?? []) {
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+              const f = item.getAsFile()
+              if (f) files.push(f)
+            }
+          }
+          if (files.length > 0) {
+            event.preventDefault()
+            void insertImages(view, files, upload)
+            return true
           }
         }
-        if (files.length === 0) return false
-        event.preventDefault()
-        void insertImages(view, files, upload)
-        return true
+        const cite = onGithubCiteRef.current
+        if (cite) {
+          const text = event.clipboardData?.getData('text/plain')?.trim() ?? ''
+          if (
+            text &&
+            /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/blob\//.test(text)
+          ) {
+            event.preventDefault()
+            void cite(text).then((md) => {
+              if (md) insertText(view, md)
+            })
+            return true
+          }
+        }
+        return false
       },
       drop(event, view) {
         const upload = onImageUploadRef.current
