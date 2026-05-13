@@ -78,7 +78,7 @@ export default function Write() {
     [parsed.body],
   )
 
-  const saveStatus = useAutoSave(currentFile, source)
+  const autoSave = useAutoSave(currentFile, source)
 
   const onSelect = useCallback((nextType: PostType, slug: string) => {
     const key = `${nextType}/${slug}`
@@ -113,13 +113,17 @@ export default function Write() {
       setPublishDialog(true)
       return
     }
-    setSource((s) => patchFrontmatter(s, { draft: true }))
-  }, [])
+    const next = patchFrontmatter(source, { draft: true })
+    setSource(next)
+    void autoSave.flush(next)
+  }, [source, autoSave])
 
   const onConfirmPublish = useCallback(() => {
-    setSource((s) => patchFrontmatter(s, { draft: false }))
+    const next = patchFrontmatter(source, { draft: false })
+    setSource(next)
     setPublishDialog(false)
-  }, [])
+    void autoSave.flush(next)
+  }, [source, autoSave])
 
   const onTogglePanel = useCallback((side: 'left' | 'right') => {
     setPanels((p) => ({ ...p, [side]: !p[side] }))
@@ -194,7 +198,7 @@ export default function Write() {
               brokenLinks={linkStats.broken}
               pending={pending}
               error={error}
-              saveStatus={saveStatus}
+              saveStatus={autoSave.status}
             />
           </div>
 
@@ -284,8 +288,8 @@ export default function Write() {
         note={
           <>
             Flips <code className="font-mono text-ink">draft: true</code> to{' '}
-            <code className="font-mono text-ink">draft: false</code> in the
-            frontmatter. Auto-save will persist the change to disk.
+            <code className="font-mono text-ink">draft: false</code> and writes
+            to disk immediately.
           </>
         }
         confirmLabel="publish"

@@ -55,7 +55,11 @@ export function Toolbar({
       </p>
       <div className="ml-auto md:ml-0 flex items-center gap-3">
         <ModeTabs mode={mode} onChange={onModeChange} />
-        <PublishButton draft={isDraft} onClick={onPublishToggle} />
+        <PublishButton
+          draft={isDraft}
+          disabled={currentFile === null}
+          onClick={onPublishToggle}
+        />
         <div className="flex items-center -mr-1">
           <SearchTrigger />
           <button
@@ -123,21 +127,32 @@ function Tab({
 
 function PublishButton({
   draft,
+  disabled,
   onClick,
 }: {
   draft: boolean
+  disabled: boolean
   onClick: () => void
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      title={draft ? 'Publish' : 'Mark as draft'}
+      disabled={disabled}
+      title={
+        disabled
+          ? 'Save the draft first (assign a slug)'
+          : draft
+            ? 'Publish'
+            : 'Mark as draft'
+      }
       className={cn(
         'font-mono text-[10px] uppercase tracking-[0.18em] px-2 py-1 rounded transition-colors',
-        draft
-          ? 'text-brand hover:bg-brand/10'
-          : 'text-ink-muted hover:text-ink',
+        disabled
+          ? 'text-ink-faint cursor-not-allowed'
+          : draft
+            ? 'text-brand hover:bg-brand/10'
+            : 'text-ink-muted hover:text-ink',
       )}
     >
       {draft ? 'Publish' : 'Mark draft'}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PostType } from '@/app/content-index'
 import { persistenceAvailable, saveSource } from './persistence'
 
@@ -10,6 +10,16 @@ export type SaveStatus =
   | { kind: 'error'; message: string }
 
 type Target = { type: PostType; slug: string } | null
+
+export type AutoSave = {
+  status: SaveStatus
+  /**
+   * Cancel any pending debounce and save now. Pass the post-mutation
+   * source explicitly — callers that just called setSource won't see the
+   * new value via the hook's deps until the next render.
+   */
+  flush: (override: string) => Promise<void>
+}
 
 const DEBOUNCE_MS = 2_000
 
@@ -23,12 +33,41 @@ const DEBOUNCE_MS = 2_000
  * In prod / non-dev the hook stays at `idle` since the endpoint isn't
  * mounted.
  */
-export function useAutoSave(target: Target, source: string): SaveStatus {
+export function useAutoSave(target: Target, source: string): AutoSave {
   const [status, setStatus] = useState<SaveStatus>({ kind: 'idle' })
   const lastSavedRef = useRef<string>(source)
   const lastTargetRef = useRef<string>('')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reqIdRef = useRef(0)
+  const targetRef = useRef(target)
+  targetRef.current = target
+
+  const runSave = useCallback(async (captured: string) => {
+    const t = targetRef.current
+    if (!t || !persistenceAvailable) return
+    if (captured === lastSavedRef.current) return
+    const id = ++reqIdRef.current
+    setStatus({ kind: 'saving' })
+    const result = await saveSource(t.type, t.slug, captured)
+    if (id !== reqIdRef.current) return
+    if (result.ok) {
+      lastSavedRef.current = captured
+      setStatus({ kind: 'saved', at: Date.now() })
+    } else {
+      setStatus({ kind: 'error', message: result.error })
+    }
+  }, [])
+
+  const flush = useCallback(
+    async (override: string) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+        timerRef.current = null
+      }
+      await runSave(override)
+    },
+    [runSave],
+  )
 
   useEffect(() => {
     if (timerRef.current) {
@@ -51,20 +90,9 @@ export function useAutoSave(target: Target, source: string): SaveStatus {
 
     setStatus({ kind: 'unsaved' })
 
-    timerRef.current = setTimeout(async () => {
+    timerRef.current = setTimeout(() => {
       timerRef.current = null
-      const id = ++reqIdRef.current
-      const captured = source
-      const t = target
-      setStatus({ kind: 'saving' })
-      const result = await saveSource(t.type, t.slug, captured)
-      if (id !== reqIdRef.current) return
-      if (result.ok) {
-        lastSavedRef.current = captured
-        setStatus({ kind: 'saved', at: Date.now() })
-      } else {
-        setStatus({ kind: 'error', message: result.error })
-      }
+      void runSave(source)
     }, DEBOUNCE_MS)
 
     return () => {
@@ -73,7 +101,7 @@ export function useAutoSave(target: Target, source: string): SaveStatus {
         timerRef.current = null
       }
     }
-  }, [target, source])
+  }, [target, source, runSave])
 
-  return status
+  return { status, flush }
 }
