@@ -22,6 +22,12 @@ const THEME_COLOR: Record<ResolvedTheme, string> = {
   dark: THEME_COLOR_DARK,
 }
 
+/**
+ * Read the saved theme mode from localStorage, defaulting to `system` when unavailable or invalid.
+ *
+ * Returns `'light'`, `'dark'`, or `'system'`. If executed during server-side rendering or if the stored
+ * value is missing or not one of the accepted modes, this function returns `'system'`.
+ */
 function readMode(): ThemeMode {
   if (typeof window === 'undefined') return 'system'
   const v = window.localStorage.getItem(STORAGE_KEY)

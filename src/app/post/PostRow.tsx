@@ -14,6 +14,15 @@ const labels = {
   page: 'Page',
 } as const
 
+/**
+ * Renders a single post as a linked list row showing its metadata and content preview.
+ *
+ * Displays the post date, type label, and — when present — reading time for essays or growth for notes;
+ * followed by the title, optional dek (subtitle), and optional tags. The row links to the post permalink.
+ *
+ * @param entry - The post entry to render; expected to contain `frontmatter` (date, title, dek, tags, type, readingTime, growth) and `slug`
+ * @returns A list item JSX element containing a link to the post with its metadata and preview content
+ */
 export function PostRow({ entry }: Props) {
   const { frontmatter: f, type } = entry
   const href = permalink(type, entry.slug)

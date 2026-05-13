@@ -7,6 +7,13 @@ type Props = {
   children: ReactNode
 }
 
+/**
+ * Render an article containing an IndexHeader and the page content.
+ *
+ * @param frontmatter - Page frontmatter; its `title` and `dek` are used to populate the header (the kicker is the title lowercased)
+ * @param children - Content to render inside the article's prose container
+ * @returns A JSX element representing the page article with header and content
+ */
 export function PageLayout({ frontmatter: f, children }: Props) {
   return (
     <article>

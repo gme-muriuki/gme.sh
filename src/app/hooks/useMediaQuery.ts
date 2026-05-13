@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 
 /**
- * Subscribe to a media query and re-render on match changes. SSR-safe:
- * initial value is `false` when window is unavailable so server renders
- * never branch on an unresolved match.
+ * Subscribes to a CSS media query and tracks whether it currently matches.
+ *
+ * Initializes to `false` when `window` is unavailable (SSR) and updates when the media query match state changes.
+ *
+ * @param query - A CSS media query string (e.g., "(min-width: 600px)").
+ * @returns `true` if the media query currently matches, `false` otherwise.
  */
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState<boolean>(() => {

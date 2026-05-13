@@ -39,6 +39,11 @@ const Editor = lazy(() => import('@/app/write/Editor'))
 
 const INITIAL_TYPE: PostType = 'essay'
 
+/**
+ * Renders the Write page: a full MDX editing UI with editor, live preview, file list, metadata panel, autosave, snapshot loading, and publish flow.
+ *
+ * @returns The React element for the Write page
+ */
 export default function Write() {
   useDocumentMeta({ title: 'Write' })
 
@@ -444,6 +449,13 @@ const DEVICE_MAX: Record<'phone' | 'tablet' | 'desktop', number> = {
   desktop: 1024,
 }
 
+/**
+ * Renders a compact device-mode selector for previewing content (phone, tablet, desktop).
+ *
+ * @param value - The currently selected device mode (`'phone' | 'tablet' | 'desktop'`).
+ * @param onChange - Callback invoked with the new device mode when the user selects a different option.
+ * @returns A React element containing the three device buttons with the active state reflected via `aria-pressed`.
+ */
 function DeviceTabs({
   value,
   onChange,
@@ -484,6 +496,12 @@ function DeviceTabs({
   )
 }
 
+/**
+ * Build the CSS grid-template-columns value for the wide (XL) layout based on side panel visibility.
+ *
+ * @param p - Flags indicating whether the left and right side panels are shown
+ * @returns A space-separated `grid-template-columns` string that includes `'220px'` if `p.left` is true, always includes `'1fr'`, and includes `'300px'` if `p.right` is true
+ */
 function xlCols(p: { left: boolean; right: boolean }): string {
   const parts: string[] = []
   if (p.left) parts.push('220px')
@@ -492,6 +510,16 @@ function xlCols(p: { left: boolean; right: boolean }): string {
   return parts.join(' ')
 }
 
+/**
+ * Render the editor status line showing word, sentence, and character counts, broken-link count, compile/error state, and the autosave indicator.
+ *
+ * @param body - The MDX/text body used to compute word, sentence, and character counts
+ * @param brokenLinks - Number of broken internal links to display (shown only when > 0)
+ * @param pending - Whether MDX compilation is currently in progress
+ * @param error - Compilation error message; when present the status is shown as an error
+ * @param saveStatus - Autosave state passed to the SaveIndicator component
+ * @returns The status line element that displays counts, link info, compile status, and the save indicator
+ */
 function StatusLine({
   body,
   brokenLinks,
@@ -536,6 +564,12 @@ function StatusLine({
   )
 }
 
+/**
+ * Render a compact textual indicator for the autosave status.
+ *
+ * @param status - Autosave status object; `kind` is one of `'idle'`, `'unsaved'`, `'saving'`, `'saved'`, or an error kind. When `kind` is `'saved'`, `status.at` provides the timestamp shown; error kinds may include `status.message`.
+ * @returns The indicator element to display, or `null` when `status.kind` is `'idle'`.
+ */
 function SaveIndicator({ status }: { status: SaveStatus }) {
   if (status.kind === 'idle') return null
   if (status.kind === 'unsaved')
@@ -574,6 +608,15 @@ const KNOWN_STATIC_ROUTES = new Set([
 const LINK_RE = /\[[^\]]*?\]\(([^)]+)\)/g
 const POST_RE = /^\/(essays|notes|shipped)\/([^/?#]+)/
 
+/**
+ * Counts Markdown links in the given MDX/text and identifies broken internal links.
+ *
+ * Scans `body` for `[text](href)` link patterns, treats links whose href starts with `/` as internal,
+ * and considers internal links broken if they do not match a known static route or an existing post.
+ *
+ * @param body - MDX or markdown text to scan for links
+ * @returns An object with `total` equal to the number of Markdown links found and `broken` equal to the count of broken internal links
+ */
 function validateLinks(body: string): { total: number; broken: number } {
   let total = 0
   let broken = 0
@@ -599,6 +642,11 @@ function validateLinks(body: string): { total: number; broken: number } {
   return { total, broken }
 }
 
+/**
+ * Placeholder UI shown while the editor component is loading.
+ *
+ * @returns A centered, muted monospaced placeholder element with the text "loading editor…"
+ */
 function EditorFallback() {
   return (
     <div className="h-full flex items-center justify-center text-ink-faint font-mono text-xs">
@@ -607,6 +655,12 @@ function EditorFallback() {
   )
 }
 
+/**
+ * Renders a styled preformatted block that displays an MDX/preview compilation error message.
+ *
+ * @param message - The error text to show inside the preformatted block
+ * @returns A `JSX.Element` containing the formatted error message
+ */
 function PreviewError({ message }: { message: string }) {
   return (
     <pre className="text-xs font-mono whitespace-pre-wrap text-[var(--destructive)] border border-[var(--destructive)]/30 rounded p-3 bg-paper-raised/50">

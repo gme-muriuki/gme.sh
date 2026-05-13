@@ -16,6 +16,12 @@ const labels = {
   shipped: 'Shipped',
 } as const
 
+/**
+ * Render a compact metadata row for a post showing its label, date, and any type-specific details.
+ *
+ * @param frontmatter - The post frontmatter (EssayFrontmatter | NoteFrontmatter | ShippedFrontmatter). Uses `type` and `date` for all posts; additionally renders `readingTime` for essays, and `growth` and `lastTended` for notes when present.
+ * @returns A paragraph element containing the post label, formatted date, and optional segments for reading time, growth, or tended date.
+ */
 export function PostMeta({ frontmatter: f }: Props) {
   const parsed = new Date(f.date)
   return (

@@ -13,6 +13,11 @@ import RssFeed from './pages/RssFeed'
 import OgCard from './pages/OgCard'
 import NotFound from './pages/NotFound'
 
+/**
+ * Provides command-palette context for nested routes and renders those routes.
+ *
+ * @returns A JSX element that wraps routed children with `CommandPaletteProvider`
+ */
 function PaletteShell() {
   return (
     <CommandPaletteProvider>

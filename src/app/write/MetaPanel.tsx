@@ -23,6 +23,24 @@ type Props = {
   onLoadSnapshot: (timestamp: string) => void
 }
 
+/**
+ * Render the document metadata editor sidebar for a file.
+ *
+ * Provides editable frontmatter fields, type-specific sections, relations/series editors,
+ * a snapshot history viewer, and a read-only raw frontmatter preview.
+ *
+ * @param fileKey - Unique key for the current file view (used as the root element key)
+ * @param frontmatter - Current parsed frontmatter values for the document
+ * @param type - Current post type (`essay`, `note`, `shipped`, or `page`)
+ * @param onType - Callback invoked when the post type changes
+ * @param onPatch - Callback invoked with partial frontmatter updates
+ * @param parseError - Optional frontmatter parse error message to display
+ * @param rawFrontmatter - Raw frontmatter text shown in the preview
+ * @param currentFile - Identifier for the file used by the history section (may be null)
+ * @param saveTick - Tick value used to refresh the history list when saves occur
+ * @param onLoadSnapshot - Callback invoked with a snapshot stamp when a snapshot is loaded
+ * @returns The React element for the metadata editing sidebar
+ */
 export function MetaPanel({
   fileKey,
   frontmatter: f,
@@ -236,6 +254,14 @@ export function MetaPanel({
   )
 }
 
+/**
+ * Parse a snapshot timestamp string into a Date.
+ *
+ * Accepts timestamps in the form `YYYY-MM-DDTHH-MM-SS` with an optional suffix after the seconds; returns a Date representing that timestamp when valid.
+ *
+ * @param stamp - The snapshot timestamp string to parse.
+ * @returns A `Date` for the parsed timestamp, or `null` if the input does not match the expected format or produces an invalid date.
+ */
 function parseStamp(stamp: string): Date | null {
   const m = stamp.match(/^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})(.*)$/)
   if (!m) return null
@@ -244,6 +270,17 @@ function parseStamp(stamp: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
+/**
+ * Render a "history" section listing stored snapshots for the given file and allow loading a selected snapshot.
+ *
+ * When `currentFile` is null the component shows a prompt to save; when there are no snapshots it shows an empty-state message.
+ * When snapshots are available it renders a scrollable list of timestamped buttons; activating a button calls `onLoad` with that snapshot's timestamp.
+ *
+ * @param currentFile - The active file identifier, or `null` when the file is unsaved. Shape: `{ type: PostType; slug: string } | null`.
+ * @param saveTick - Incremented value used to trigger reloading the snapshot list when the file is saved or snapshots change.
+ * @param onLoad - Callback invoked with the selected snapshot timestamp when the user loads a snapshot.
+ * @returns The history UI section containing messages or a list of snapshot buttons.
+ */
 function HistorySection({
   currentFile,
   saveTick,
@@ -307,6 +344,12 @@ function HistorySection({
 const inputClass =
   'w-full bg-transparent border-b border-transparent hover:border-rule focus:border-ink focus:outline-none py-0.5 text-[13px] text-ink placeholder:text-ink-faint transition-colors'
 
+/**
+ * Render a small monospace uppercase label used above a section.
+ *
+ * @param children - Content to display inside the label
+ * @returns A paragraph element styled as a muted, uppercase section label
+ */
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
     <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.22em] text-ink-faint">
@@ -315,6 +358,13 @@ function SectionLabel({ children }: { children: ReactNode }) {
   )
 }
 
+/**
+ * Render a titled vertical section with a compact mono label and spaced content.
+ *
+ * @param title - The section heading displayed in a small uppercase mono label
+ * @param children - Section content rendered beneath the heading
+ * @returns A <section> element containing the label row and the provided children
+ */
 function Section({
   title,
   children,
@@ -333,6 +383,13 @@ function Section({
   )
 }
 
+/**
+ * Render a labeled form field wrapper that displays a small uppercase label above arbitrary content.
+ *
+ * @param label - The label text shown above the field
+ * @param children - The field content (inputs, controls, or other elements) rendered beneath the label
+ * @returns A labeled field element suitable for use in forms and settings panels
+ */
 function Field({
   label,
   children,
@@ -350,6 +407,13 @@ function Field({
   )
 }
 
+/**
+ * Uncontrolled text input that trims its value and calls a commit handler when blurred.
+ *
+ * @param defaultValue - Initial input value
+ * @param placeholder - Optional placeholder text shown when empty
+ * @param onCommit - Called with the trimmed input value when the field loses focus
+ */
 function TextInput({
   defaultValue,
   placeholder,
@@ -370,6 +434,14 @@ function TextInput({
   )
 }
 
+/**
+ * Render a compact, mono-styled segmented control of labeled options and allow switching the selected option.
+ *
+ * @param value - The currently selected option value.
+ * @param options - Array of option objects with `value` and `label` shown as segment buttons.
+ * @param onChange - Called with an option's `value` when that segment is activated.
+ * @returns The rendered segmented control element.
+ */
 function Segmented<T extends string>({
   value,
   options,
@@ -407,6 +479,12 @@ function Segmented<T extends string>({
   )
 }
 
+/**
+ * Parse a comma-separated tag string into an array of trimmed tags.
+ *
+ * @param s - Comma-separated list of tags; individual items are trimmed
+ * @returns `string[]` of non-empty trimmed tags if any are present, `undefined` otherwise
+ */
 function parseTagList(s: string): string[] | undefined {
   const arr = s
     .split(',')
@@ -415,6 +493,12 @@ function parseTagList(s: string): string[] | undefined {
   return arr.length > 0 ? arr : undefined
 }
 
+/**
+ * Render an editable list of links (label + href) that commits a cleaned array on changes.
+ *
+ * @param value - The current list of link objects; an empty array displays a single blank row for entry.
+ * @param onCommit - Called with the new list after edits; entries with both label and href empty are omitted.
+ */
 function LinksRepeater({
   value,
   onCommit,
@@ -482,6 +566,15 @@ function LinksRepeater({
   )
 }
 
+/**
+ * Renders an editor for a list of relations and commits changes.
+ *
+ * Allows editing each relation's kind, target, and optional note, and supports adding or removing rows.
+ *
+ * @param value - The current list of relations displayed in the editor.
+ * @param onCommit - Called with the updated list when the user changes rows. Relations with an empty `target` are removed before committing.
+ * @returns The React element for the relations editor.
+ */
 function RelationsEditor({
   value,
   onCommit,
@@ -569,6 +662,13 @@ function RelationsEditor({
   )
 }
 
+/**
+ * Render the "series" advanced frontmatter editor.
+ *
+ * @param series - The current `series` frontmatter object to edit, or `undefined` when none is set.
+ * @param onCommit - Callback invoked with the updated `series` object, or `undefined` to remove it.
+ * @returns The UI section for viewing and editing the `series` frontmatter (name, index, total).
+ */
 function SeriesSection({
   series,
   onCommit,

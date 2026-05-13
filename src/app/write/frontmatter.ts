@@ -9,6 +9,15 @@ export type ParsedFrontmatter = {
   error: string | null
 }
 
+/**
+ * Extracts a YAML frontmatter block from the start of `source` and returns the parsed frontmatter, the remaining body, and any parse error.
+ *
+ * @param source - The full document text to inspect for a leading `---` fenced YAML frontmatter block
+ * @returns An object with:
+ *  - `frontmatter`: the parsed YAML as a `Partial<RawMdxFrontmatter>` if present and an object, otherwise `{}`.
+ *  - `body`: the remainder of `source` after the frontmatter fence (or the original `source` when no frontmatter is found).
+ *  - `error`: a parse error message if YAML parsing failed, otherwise `null`.
+ */
 export function parseFrontmatter(source: string): ParsedFrontmatter {
   const m = source.match(FENCE)
   if (!m) return { frontmatter: {}, body: source, error: null }
@@ -30,9 +39,11 @@ export function parseFrontmatter(source: string): ParsedFrontmatter {
 }
 
 /**
- * Apply a patch to the frontmatter block of a source string and return the
- * new source. Single-call replacement for the parse -> spread -> serialize
- * idiom. Callers do not need to know the YAML fence shape.
+ * Apply a patch to the frontmatter block of a source string and produce an updated source.
+ *
+ * @param source - The full document text that may contain a YAML frontmatter block.
+ * @param patch - Partial frontmatter fields to merge over existing frontmatter; keys in `patch` overwrite existing keys.
+ * @returns The document text with the merged frontmatter serialized back into a YAML fence. If the merged frontmatter has no fields, the body is returned without a frontmatter block.
  */
 export function patchFrontmatter(
   source: string,
@@ -43,14 +54,24 @@ export function patchFrontmatter(
 }
 
 /**
- * Return the raw YAML text between the `---` fences of a source string,
- * empty string if none. Used by the document panel's read-only preview.
+ * Extracts the YAML content from a leading `---` fenced frontmatter block.
+ *
+ * @returns The raw YAML text contained between the opening and closing `---` fences, or an empty string if no leading frontmatter block is present.
  */
 export function frontmatterText(source: string): string {
   const m = source.match(FENCE)
   return m?.[1] ?? ''
 }
 
+/**
+ * Serialize a frontmatter object as a YAML `---` fence block and prepend it to the body, or return the body without leading newlines if there is no frontmatter.
+ *
+ * Omits keys whose value is `undefined`, `null`, the empty string, or an empty array before serializing.
+ *
+ * @param fm - Partial frontmatter object to serialize
+ * @param body - Document body to follow the frontmatter
+ * @returns The combined document: a fenced YAML frontmatter block, a blank line, and the body; or the body with leading newlines removed if no frontmatter fields remain
+ */
 export function serializeFrontmatter(
   fm: Partial<RawMdxFrontmatter>,
   body: string,

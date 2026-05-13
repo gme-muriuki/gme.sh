@@ -14,11 +14,17 @@ type SidePanelDrawerProps = {
 }
 
 /**
- * Sticky slide-in panel for narrow viewports — files tree on the left,
- * document properties on the right. Pointer-down / interact-outside are
- * intercepted so native pickers (date input, select) opening from inside
- * the panel don't dismiss it; the only ways out are the toolbar toggle
- * (via parent state) or ESC.
+ * Renders a sticky slide-in side panel anchored to the left or right edge.
+ *
+ * The panel renders a full-screen overlay and a side-positioned content area. It prevents pointer/interact-outside dismissal so native controls (e.g., date pickers, selects) opened from inside the panel do not close it; closing is controlled via `onOpenChange` (e.g., toolbar toggle) or the Escape key.
+ *
+ * @param side - Which edge the panel attaches to: `"left"` or `"right"`.
+ * @param open - Whether the panel is visible.
+ * @param onOpenChange - Called when the dialog open state should change.
+ * @param title - Screen-reader-only label for the panel.
+ * @param width - Optional explicit pixel width. Defaults to 260px when `side` is `"left"` and 320px when `side` is `"right"`.
+ * @param children - Panel contents.
+ * @returns The rendered side panel element.
  */
 export function SidePanelDrawer({
   side,
@@ -66,8 +72,17 @@ type ConfirmDialogProps = {
 }
 
 /**
- * Center-positioned confirmation modal. Cancel label defaults to "cancel".
- * The confirm button is brand-tinted; cancel is plain ink-muted.
+ * Render a centered confirmation modal with a cancel and confirm action.
+ *
+ * @param open - Whether the dialog is visible
+ * @param onOpenChange - Callback invoked with the new open state
+ * @param title - Heading text shown at the top of the modal
+ * @param description - Optional body content rendered below the title
+ * @param note - Optional secondary note rendered between `description` and the action row
+ * @param confirmLabel - Label for the confirm button
+ * @param cancelLabel - Label for the cancel button; defaults to `"cancel"`
+ * @param onConfirm - Handler invoked when the confirm button is clicked
+ * @returns The rendered dialog element
  */
 export function ConfirmDialog({
   open,

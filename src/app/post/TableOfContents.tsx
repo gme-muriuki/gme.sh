@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react'
 
 type Item = { id: string; text: string; level: 2 | 3 }
 
+/**
+ * Render a table of contents built from `h2[id]` and `h3[id]` headings inside the `.prose-essay` element.
+ *
+ * The list is kept in sync with the document: it initially scans the article for headings and updates automatically when the article's DOM changes.
+ *
+ * @returns A `<nav>` element containing links to the article's `h2`/`h3` headings, or `null` if no headings are found.
+ */
 export function TableOfContents() {
   const [items, setItems] = useState<Item[]>([])
 

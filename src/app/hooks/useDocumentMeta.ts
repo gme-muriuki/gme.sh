@@ -7,6 +7,12 @@ type Args = {
 
 const BASE_TITLE = 'wellformed'
 
+/**
+ * Update the document title and the page meta description when inputs change.
+ *
+ * @param title - Optional page title; when provided sets document.title to "`<title>` — wellformed", otherwise uses "wellformed"
+ * @param description - Optional description; when defined sets the `content` of the `meta[name="description"]` element (creates the element if it does not exist)
+ */
 export function useDocumentMeta({ title, description }: Args): void {
   useEffect(() => {
     document.title = title ? `${title} — ${BASE_TITLE}` : BASE_TITLE

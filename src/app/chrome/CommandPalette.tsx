@@ -25,6 +25,11 @@ const PaletteContext = createContext<PaletteContextValue>({
   setOpen: () => {},
 })
 
+/**
+ * Access the current command palette context.
+ *
+ * @returns The current palette context value containing `open` — `true` if the palette is visible, `false` otherwise — and `setOpen` — a function that sets the palette visibility.
+ */
 export function usePalette(): PaletteContextValue {
   return useContext(PaletteContext)
 }
@@ -73,6 +78,17 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   )
 }
 
+/**
+ * Render the global command palette UI for searching and navigating the site.
+ *
+ * Renders a controlled command palette containing a search input, an Actions group
+ * (theme toggle and open editor), searchable Posts and Pages groups, and keyboard
+ * shortcut hints. Selecting an item closes the palette and navigates to the item's href.
+ *
+ * @param open - Whether the palette is currently visible
+ * @param setOpen - Function to update the palette visibility
+ * @returns The React element for the command palette
+ */
 function Palette({
   open,
   setOpen,

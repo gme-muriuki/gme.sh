@@ -7,6 +7,14 @@ const SITE_URL = 'https://example.com'
 const SITE_TITLE = 'wellformed'
 const SITE_DESCRIPTION = 'Rust, systems, half-baked ideas.'
 
+/**
+ * Escape characters in a string to make it safe for inclusion in XML.
+ *
+ * Replaces the characters `&`, `<`, `>`, `"` and `'` with their XML entity equivalents.
+ *
+ * @param s - The input string to escape for XML content
+ * @returns The input string with `&`, `<`, `>`, `"` and `'` replaced by XML entities
+ */
 function escapeXml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -16,6 +24,17 @@ function escapeXml(s: string): string {
     .replace(/'/g, '&apos;')
 }
 
+/**
+ * Generate an RSS 2.0 XML document string for the provided content entries.
+ *
+ * The feed includes channel metadata (site title, link, description, language, and lastBuildDate)
+ * and an `<item>` element for each entry except those with `type === 'page'`. Each item contains
+ * title, link, guid, pubDate, description, and category. If `entries[0]` exists its date is used
+ * for the channel `lastBuildDate`; otherwise the current date/time is used.
+ *
+ * @param entries - Array of content entries to include in the feed
+ * @returns A string containing the complete RSS 2.0 XML document
+ */
 function generateRss(entries: PostEntry[]): string {
   const items = entries
     .filter((p) => p.type !== 'page')

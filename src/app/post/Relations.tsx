@@ -21,6 +21,12 @@ type Parsed =
   | { ok: true; type: PostType; slug: string }
   | { ok: false; raw: string }
 
+/**
+ * Parse a relation target string of the form `<type>/<slug>` into a structured result.
+ *
+ * @param target - The raw target string to parse (expected `<type>/<slug>`)
+ * @returns `true` result with `{ type, slug }` when `type` is one of `essay`, `note`, `shipped`, or `page` and a `slug` is present; otherwise a `false` result containing the original raw string
+ */
 function parseTarget(target: string): Parsed {
   const [t, slug] = target.split('/', 2)
   if (
@@ -33,10 +39,14 @@ function parseTarget(target: string): Parsed {
 }
 
 /**
- * Editorial "related" footer — surfaces the conceptual relationships an
- * author asserts in frontmatter. Renders a missing target as a faint
- * placeholder rather than dropping it, so dangling references stay
- * visible while you fix them.
+ * Render a “Related” editorial footer listing conceptual relations from frontmatter.
+ *
+ * Renders each relation's kind label and either a linked post title when the target exists
+ * or a faint italic placeholder showing the raw or parsed target when the target is missing.
+ *
+ * @param relations - Relation entries to display
+ * @param className - Optional CSS class applied to the wrapper <section>
+ * @returns The rendered section element, or `null` when `relations` is empty
  */
 export function Relations({ relations, className }: Props) {
   if (relations.length === 0) return null
