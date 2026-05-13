@@ -1,9 +1,11 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import { format } from 'date-fns'
 import type { RawMdxFrontmatter } from '*.mdx'
 import type { PostType } from '@/app/content-index'
 import { SquareMark } from '@/app/chrome/SquareMark'
 import { cn } from '@/app/lib/cn'
+import { listSnapshots, persistenceAvailable } from './persistence'
 
 type FmPatch = Partial<RawMdxFrontmatter>
 
@@ -15,6 +17,9 @@ type Props = {
   onPatch: (patch: FmPatch) => void
   parseError: string | null
   rawFrontmatter: string
+  currentFile: { type: PostType; slug: string } | null
+  saveTick: number
+  onLoadSnapshot: (timestamp: string) => void
 }
 
 export function MetaPanel({
@@ -25,6 +30,9 @@ export function MetaPanel({
   onPatch,
   parseError,
   rawFrontmatter,
+  currentFile,
+  saveTick,
+  onLoadSnapshot,
 }: Props) {
   return (
     <aside
@@ -195,12 +203,83 @@ export function MetaPanel({
         </Field>
       </Section>
 
+      <HistorySection
+        currentFile={currentFile}
+        saveTick={saveTick}
+        onLoad={onLoadSnapshot}
+      />
+
       <Section title="frontmatter">
         <pre className="not-prose rounded border border-rule bg-paper p-3 text-[11px] font-mono leading-[1.55] text-ink-muted overflow-x-auto whitespace-pre-wrap">
           {rawFrontmatter.trim() || '(empty)'}
         </pre>
       </Section>
     </aside>
+  )
+}
+
+function parseStamp(stamp: string): Date | null {
+  const m = stamp.match(/^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})(.*)$/)
+  if (!m) return null
+  const iso = `${m[1]}T${m[2]}:${m[3]}:${m[4]}${m[5] ?? ''}`
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function HistorySection({
+  currentFile,
+  saveTick,
+  onLoad,
+}: {
+  currentFile: { type: PostType; slug: string } | null
+  saveTick: number
+  onLoad: (timestamp: string) => void
+}) {
+  const [snapshots, setSnapshots] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!currentFile || !persistenceAvailable) {
+      setSnapshots([])
+      return
+    }
+    let cancelled = false
+    listSnapshots(currentFile.type, currentFile.slug).then((r) => {
+      if (cancelled) return
+      setSnapshots(r.ok ? r.snapshots : [])
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [currentFile, saveTick])
+
+  return (
+    <Section title="history">
+      {!currentFile ? (
+        <p className="text-[11px] text-ink-faint italic">
+          Save the file first to start collecting snapshots.
+        </p>
+      ) : snapshots.length === 0 ? (
+        <p className="text-[11px] text-ink-faint italic">No snapshots yet.</p>
+      ) : (
+        <ul className="space-y-0.5 max-h-48 overflow-y-auto -mx-1">
+          {snapshots.map((stamp) => {
+            const d = parseStamp(stamp)
+            return (
+              <li key={stamp}>
+                <button
+                  type="button"
+                  onClick={() => onLoad(stamp)}
+                  className="w-full text-left font-mono text-[11px] text-ink-muted hover:text-ink hover:bg-paper-raised px-1 py-0.5 rounded transition-colors"
+                  title={stamp}
+                >
+                  {d ? format(d, 'd MMM HH:mm:ss') : stamp}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </Section>
   )
 }
 

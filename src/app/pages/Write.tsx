@@ -26,7 +26,7 @@ import {
   patchFrontmatter,
 } from '@/app/write/frontmatter'
 import { useAutoSave, type SaveStatus } from '@/app/write/useAutoSave'
-import { uploadImage } from '@/app/write/persistence'
+import { loadSnapshot, uploadImage } from '@/app/write/persistence'
 import type { PostType } from '@/app/content-index'
 import type { RawMdxFrontmatter } from '*.mdx'
 
@@ -58,6 +58,7 @@ export default function Write() {
     Array<{ type: PostType; slug: string }>
   >([])
   const [publishDialog, setPublishDialog] = useState(false)
+  const [pendingSnapshot, setPendingSnapshot] = useState<string | null>(null)
 
   const parsed = useMemo(() => parseFrontmatter(source), [source])
   const deferredSource = useDeferredValue(source)
@@ -114,6 +115,33 @@ export default function Write() {
     [],
   )
 
+  const doLoadSnapshot = useCallback(
+    async (timestamp: string) => {
+      if (!currentFile) return
+      const r = await loadSnapshot(currentFile.type, currentFile.slug, timestamp)
+      if (r.ok) setSource(r.source)
+    },
+    [currentFile],
+  )
+
+  const onLoadSnapshot = useCallback(
+    (timestamp: string) => {
+      if (!currentFile) return
+      const dirty = SOURCES[`${currentFile.type}/${currentFile.slug}`] !== source
+      if (dirty) {
+        setPendingSnapshot(timestamp)
+        return
+      }
+      void doLoadSnapshot(timestamp)
+    },
+    [currentFile, source, doLoadSnapshot],
+  )
+
+  const onConfirmLoadSnapshot = useCallback(() => {
+    if (pendingSnapshot) void doLoadSnapshot(pendingSnapshot)
+    setPendingSnapshot(null)
+  }, [pendingSnapshot, doLoadSnapshot])
+
   const draftRef = useRef(parsed.frontmatter.draft === true)
   draftRef.current = parsed.frontmatter.draft === true
 
@@ -148,6 +176,8 @@ export default function Write() {
     ? `${currentFile.type}/${currentFile.slug}`
     : 'draft'
   const rawFm = frontmatterText(source)
+  const saveTick =
+    autoSave.status.kind === 'saved' ? autoSave.status.at : 0
 
   return (
     <div className="flex flex-col h-screen min-h-0 bg-paper text-ink">
@@ -257,6 +287,9 @@ export default function Write() {
             onPatch={onPatch}
             parseError={parsed.error}
             rawFrontmatter={rawFm}
+            currentFile={currentFile}
+            saveTick={saveTick}
+            onLoadSnapshot={onLoadSnapshot}
           />
         </div>
       </div>
@@ -276,6 +309,20 @@ export default function Write() {
           />
         </SidePanelDrawer>
       ) : null}
+
+      <ConfirmDialog
+        open={pendingSnapshot !== null}
+        onOpenChange={(o) => !o && setPendingSnapshot(null)}
+        title="discard unsaved changes?"
+        description={
+          <p className="text-sm text-ink leading-snug">
+            Loading this snapshot will replace the current editor content. Your
+            in-flight changes will be lost.
+          </p>
+        }
+        confirmLabel="load snapshot"
+        onConfirm={onConfirmLoadSnapshot}
+      />
 
       <ConfirmDialog
         open={publishDialog}
@@ -324,6 +371,9 @@ export default function Write() {
             onPatch={onPatch}
             parseError={parsed.error}
             rawFrontmatter={rawFm}
+            currentFile={currentFile}
+            saveTick={saveTick}
+            onLoadSnapshot={onLoadSnapshot}
           />
         </SidePanelDrawer>
       ) : null}

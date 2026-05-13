@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PostType } from '@/app/content-index'
-import { persistenceAvailable, saveSource } from './persistence'
+import {
+  createSnapshot,
+  persistenceAvailable,
+  saveSource,
+} from './persistence'
 
 export type SaveStatus =
   | { kind: 'idle' }
@@ -53,6 +57,9 @@ export function useAutoSave(target: Target, source: string): AutoSave {
     if (result.ok) {
       lastSavedRef.current = captured
       setStatus({ kind: 'saved', at: Date.now() })
+      // Fire-and-forget snapshot. A failed snapshot doesn't roll back
+      // the save; the user gets their version-history miss silently.
+      void createSnapshot(t.type, t.slug, captured)
     } else {
       setStatus({ kind: 'error', message: result.error })
     }
