@@ -7,7 +7,10 @@ export function Footer() {
     <footer className="mt-24 border-t border-rule">
       <div className="chrome-frame py-5">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
-          <span>The Recursion of Learning</span>
+          <span className="wordmark">
+            <span>well</span>
+            <span className="surname">formed</span>
+          </span>
           <SquareMark className="text-[7px] mx-0.5" />
           <span className="font-mono">@gme</span>
           <SquareMark className="text-[7px] mx-0.5" />

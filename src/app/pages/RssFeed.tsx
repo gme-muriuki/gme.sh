@@ -4,7 +4,7 @@ import { permalink } from '@/app/lib/permalink'
 import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 const SITE_URL = 'https://example.com'
-const SITE_TITLE = 'The Recursion of Learning'
+const SITE_TITLE = 'wellformed'
 const SITE_DESCRIPTION = 'Rust, systems, half-baked ideas.'
 
 function escapeXml(s: string): string {

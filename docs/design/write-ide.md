@@ -46,7 +46,7 @@ Two visual worlds meet at the editor: the **field notebook** (preview pane, publ
 
 ```
 ┌─ topbar 40px ──────────────────────────────────────────────────┐
-│ ■ James Muriuki  $ edit essays/hash-map.mdx  EDIT|PREVIEW  ⌘K  │
+│ ■ wellformed     $ edit essays/hash-map.mdx  EDIT|PREVIEW  ⌘K  │
 ├──────────┬─────────────────────┬───────────────┬───────────────┤
 │ sidebar  │ editor              │ preview       │ meta          │
 │ 220px    │ flex, min 0         │ flex, min 0   │ 300px         │

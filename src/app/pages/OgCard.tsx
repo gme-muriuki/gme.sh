@@ -30,9 +30,8 @@ export default function OgCard() {
         {/* corner: wordmark */}
         <div className="flex items-baseline justify-between">
           <p className="wordmark text-2xl text-ink whitespace-nowrap">
-            <span>The </span>
-            <span className="surname">Recursion</span>
-            <span> of Learning</span>
+            <span>well</span>
+            <span className="surname">formed</span>
           </p>
           <p className="font-mono text-sm uppercase tracking-[0.22em] text-ink-muted">
             gme.sh

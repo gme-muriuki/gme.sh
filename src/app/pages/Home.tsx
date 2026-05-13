@@ -7,7 +7,7 @@ import { useDocumentMeta } from '@/app/hooks/useDocumentMeta'
 
 export default function Home() {
   useDocumentMeta({
-    description: 'The Recursion of Learning — Rust, systems, half-baked ideas.',
+    description: 'wellformed — Rust, systems, half-baked ideas.',
   })
   const essays = postsByType('essay')
   const notes = postsByType('note')

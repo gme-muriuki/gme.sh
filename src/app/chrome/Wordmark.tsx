@@ -10,11 +10,10 @@ export function Wordmark({ size = 'md' }: Props) {
     <Link
       to="/"
       className={`wordmark ${text} no-underline hover:no-underline text-ink whitespace-nowrap`}
-      aria-label="The Recursion of Learning — home"
+      aria-label="wellformed — home"
     >
-      <span>The </span>
-      <span className="surname">Recursion</span>
-      <span> of Learning</span>
+      <span>well</span>
+      <span className="surname">formed</span>
     </Link>
   )
 }
