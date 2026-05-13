@@ -29,11 +29,11 @@ import { tags as t } from '@lezer/highlight'
 import { cn } from '@/app/lib/cn'
 
 /**
- * Create a CodeMirror command that wraps the current selection with `prefix` and `suffix`.
+ * Create a CodeMirror command that wraps the current selection with the given prefix and suffix.
  *
  * @param prefix - Text to insert before the selection
  * @param suffix - Text to insert after the selection; defaults to `prefix`
- * @returns A command function which, when invoked with an `EditorView`, wraps the selection, places the cursor inside the wrapped content, focuses the editor, and returns `true`
+ * @returns A command function that applies the wrap, places the cursor inside the wrapped content, focuses the editor, and returns `true`
  */
 function wrap(prefix: string, suffix: string = prefix) {
   return (view: EditorView): boolean => {
@@ -54,7 +54,7 @@ function wrap(prefix: string, suffix: string = prefix) {
 }
 
 /**
- * Wraps the current selection (or the literal "text" when the selection is empty) as a Markdown link and selects the placeholder URL portion.
+ * Wraps the current selection (or the literal "text" when the selection is empty) in Markdown link syntax and selects the placeholder URL portion.
  *
  * @param view - The CodeMirror EditorView to modify
  * @returns `true`
@@ -217,10 +217,10 @@ function insertText(view: EditorView, text: string): void {
 }
 
 /**
- * Uploads each file and inserts a Markdown image `![](url)` at the editor selection for each successful upload.
+ * Upload files and insert a Markdown image (`![](url)`) at the current selection for each successful upload.
  *
- * @param view - The EditorView to insert image markdown into
- * @param files - Files to upload and insert
+ * @param view - The EditorView to insert image markup into
+ * @param files - Image files to upload and insert
  * @param upload - Async uploader that returns the image URL on success or `null` to skip insertion
  */
 async function insertImages(

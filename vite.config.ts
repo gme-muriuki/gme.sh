@@ -13,9 +13,9 @@ import { writeBack } from './vite-plugins/write-back'
 // Substitutes the theme-color placeholders in index.html with the values
 // from src/styles/theme-colors.ts, so the no-flash inline script and
 /**
- * Creates a Vite plugin that injects theme color values into index.html by replacing placeholders.
+ * Create a Vite plugin that injects theme colors into index.html.
  *
- * @returns A Vite `Plugin` that replaces `__THEME_LIGHT__` with `THEME_COLOR_LIGHT` and `__THEME_DARK__` with `THEME_COLOR_DARK` in HTML files during transformIndexHtml.
+ * @returns A Vite `Plugin` that replaces `__THEME_LIGHT__` with `THEME_COLOR_LIGHT` and `__THEME_DARK__` with `THEME_COLOR_DARK` in HTML during `transformIndexHtml`.
  */
 function themeColorInject(): Plugin {
   return {

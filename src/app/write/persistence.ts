@@ -79,10 +79,10 @@ function extFromFile(file: File): string {
 }
 
 /**
- * Uploads an image file to the server and returns the resulting upload information.
+ * Uploads an image file to the server.
  *
- * @param file - The image file to upload
- * @returns An object: `{ ok: true; url: string }` on success, or `{ ok: false; error: string }` on failure
+ * @param file - The file to upload
+ * @returns The upload URL on success, or an error message on failure
  */
 export async function uploadImage(file: File): Promise<UploadResult> {
   if (!persistenceAvailable) return { ok: false, error: PROD_ERROR }

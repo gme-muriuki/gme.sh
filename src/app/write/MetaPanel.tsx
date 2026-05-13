@@ -255,12 +255,12 @@ export function MetaPanel({
 }
 
 /**
- * Parse a snapshot timestamp string into a Date.
+ * Convert a snapshot timestamp string to the corresponding date-time.
  *
- * Accepts timestamps in the form `YYYY-MM-DDTHH-MM-SS` with an optional suffix after the seconds; returns a Date representing that timestamp when valid.
+ * Accepts strings in the form `YYYY-MM-DDTHH-MM-SS` with an optional suffix after the seconds (for example a timezone or fractional seconds).
  *
- * @param stamp - The snapshot timestamp string to parse.
- * @returns A `Date` for the parsed timestamp, or `null` if the input does not match the expected format or produces an invalid date.
+ * @param stamp - Snapshot timestamp string to parse (expected `YYYY-MM-DDTHH-MM-SS` plus optional suffix).
+ * @returns A `Date` for the parsed timestamp, or `null` if the input does not match the expected format or yields an invalid date.
  */
 function parseStamp(stamp: string): Date | null {
   const m = stamp.match(/^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})(.*)$/)
@@ -345,7 +345,7 @@ const inputClass =
   'w-full bg-transparent border-b border-transparent hover:border-rule focus:border-ink focus:outline-none py-0.5 text-[13px] text-ink placeholder:text-ink-faint transition-colors'
 
 /**
- * Render a small monospace uppercase label used above a section.
+ * Renders a small monospace uppercase label displayed above a section.
  *
  * @param children - Content to display inside the label
  * @returns A paragraph element styled as a muted, uppercase section label
@@ -435,12 +435,11 @@ function TextInput({
 }
 
 /**
- * Render a compact, mono-styled segmented control of labeled options and allow switching the selected option.
+ * Render a compact monospace segmented control for selecting one option.
  *
- * @param value - The currently selected option value.
- * @param options - Array of option objects with `value` and `label` shown as segment buttons.
- * @param onChange - Called with an option's `value` when that segment is activated.
- * @returns The rendered segmented control element.
+ * Each option is shown as a labeled segment; the active segment is indicated with `aria-pressed`.
+ *
+ * @returns The React element for the segmented control
  */
 function Segmented<T extends string>({
   value,

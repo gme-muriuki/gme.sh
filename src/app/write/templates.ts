@@ -10,12 +10,12 @@ function today(): string {
 }
 
 /**
- * Generate a Markdown/MDX post template for the given post type, with frontmatter populated using today's date.
+ * Generate a ready-to-edit Markdown/MDX post template for the given post type.
  *
- * Produces a ready-to-edit string containing YAML frontmatter and a body scaffold appropriate to the selected `type`.
+ * The returned string contains YAML frontmatter (with today's date) and a scaffolded body appropriate to the selected `type`.
  *
- * @param type - The kind of post to generate: `'essay'` (long-form essay scaffold), `'note'` (short dated note), `'shipped'` (release note with links), or `'page'` (minimal static page)
- * @returns The generated Markdown/MDX content as a string (YAML frontmatter plus body)
+ * @param type - The post kind to generate: `'essay'`, `'note'`, `'shipped'`, or `'page'`
+ * @returns A Markdown/MDX document string with YAML frontmatter (including today's date) followed by a scaffolded body
  */
 export function makeTemplate(type: PostType): string {
   const date = today()

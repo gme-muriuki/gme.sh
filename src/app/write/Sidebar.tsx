@@ -24,15 +24,15 @@ const TYPE_SHORT: Record<PostType, string> = {
 type SortKey = 'date' | 'title' | 'status'
 
 /**
- * Render the editor sidebar for browsing, searching, sorting, and creating posts.
+ * Renders the editor sidebar for browsing, searching, sorting, and creating posts.
  *
- * Renders a searchable list of posts with optional sections for drafts, tags, and recent entries, and provides controls to change sort mode and create new posts.
+ * Displays a searchable list of posts (excluding pages) with optional sections for matching results, drafts, tags, and recent entries; provides controls to change sort mode and to create new posts.
  *
- * @param currentFile - The currently open file (type and slug) or `null` when none is selected.
- * @param recent - An array of recent file references ({ type, slug }) used to populate the "recent" section.
- * @param onSelect - Callback invoked with (type, slug) when a post is selected from the list.
- * @param onNew - Callback invoked with a `PostType` when the user requests creating a new item.
- * @returns The sidebar UI as a JSX element.
+ * @param currentFile - The currently open file (type and slug) or `null` when none is selected
+ * @param recent - Array of recent file references (`{ type, slug }`) used to populate the "recent" section
+ * @param onSelect - Callback invoked with `(type, slug)` when a post is selected from the list
+ * @param onNew - Callback invoked with a `PostType` when the user requests creating a new item
+ * @returns The sidebar UI as a JSX element
  */
 export function Sidebar({ currentFile, recent, onSelect, onNew }: Props) {
   const [filter, setFilter] = useState('')
@@ -227,11 +227,11 @@ export function Sidebar({ currentFile, recent, onSelect, onNew }: Props) {
 }
 
 /**
- * Render a titled section wrapper with a compact header and its children.
+ * Displays a section with a compact uppercase header and its children.
  *
- * @param title - The header text shown above the section content
- * @param children - Content to display inside the section
- * @returns A section element containing a small header row and the provided children
+ * @param title - Header text displayed above the section content
+ * @param children - Content rendered inside the section
+ * @returns A section element containing the header and the provided children
  */
 function Section({
   title,
@@ -332,10 +332,10 @@ function PostItem({
 }
 
 /**
- * Renders a small, italicized paragraph for empty-state or helper text.
+ * Displays a compact italicized line used for empty-state or helper text.
  *
- * @param children - Content to display inside the empty-line paragraph
- * @returns A paragraph element styled for subtle, italicized helper text
+ * @param children - Content to render inside the line
+ * @returns A paragraph element styled as subtle, italic helper text
  */
 function EmptyLine({ children }: { children: React.ReactNode }) {
   return (

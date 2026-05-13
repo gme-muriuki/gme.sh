@@ -95,11 +95,11 @@ export function Toolbar({
 }
 
 /**
- * Render mode selection tabs for "edit" and "preview".
+ * Renders two tabs for selecting the editor mode: "edit" and "preview".
  *
- * @param mode - The currently active mode, either `"edit"` or `"preview"`.
- * @param onChange - Callback invoked with the newly selected mode when a tab is clicked.
- * @returns The tab group element that lets the user switch between edit and preview modes.
+ * @param mode - The currently selected mode, either `"edit"` or `"preview"`.
+ * @param onChange - Called with the new mode when a tab is selected.
+ * @returns A JSX element containing the mode selection tabs.
  */
 function ModeTabs({
   mode,

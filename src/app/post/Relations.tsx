@@ -24,8 +24,8 @@ type Parsed =
 /**
  * Parse a relation target string of the form `<type>/<slug>` into a structured result.
  *
- * @param target - The raw target string to parse (expected `<type>/<slug>`)
- * @returns `true` result with `{ type, slug }` when `type` is one of `essay`, `note`, `shipped`, or `page` and a `slug` is present; otherwise a `false` result containing the original raw string
+ * @param target - The raw target string in the form `type/slug`
+ * @returns `{ ok: true, type, slug }` when `type` is one of `essay`, `note`, `shipped`, or `page` and a `slug` is present; `{ ok: false, raw }` otherwise
  */
 function parseTarget(target: string): Parsed {
   const [t, slug] = target.split('/', 2)

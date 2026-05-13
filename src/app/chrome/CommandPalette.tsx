@@ -56,6 +56,15 @@ const staticPages = [
   { title: 'Write', href: '/write', kicker: 'page' },
 ]
 
+/**
+ * Supplies palette visibility state to descendants and wires a global keyboard shortcut to toggle it.
+ *
+ * Registers a global ⌘/Ctrl+K handler that toggles the palette open state, provides `{ open, setOpen }`
+ * via `PaletteContext`, renders `children`, and mounts the `Palette` UI controlled by that state.
+ *
+ * @param children - The provider's React children
+ * @returns The provider element that supplies palette state and renders the command palette
+ */
 export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
 

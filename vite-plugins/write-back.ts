@@ -62,10 +62,10 @@ async function readBody(req: IncomingMessage): Promise<Buffer> {
 }
 
 /**
- * Parse the incoming request body as JSON and return the resulting value.
+ * Reads the entire request body and parses it as JSON.
  *
- * @param req - The incoming HTTP request whose body will be read and parsed.
- * @returns The parsed JSON value from the request body.
+ * @returns The parsed JSON value.
+ * @throws {SyntaxError} If the request body is not valid JSON.
  */
 async function readJson<T>(req: IncomingMessage): Promise<T> {
   const buf = await readBody(req)
@@ -73,8 +73,9 @@ async function readJson<T>(req: IncomingMessage): Promise<T> {
 }
 
 /**
- * Send a JSON response with the given HTTP status code.
+ * Send `body` as a JSON response with the specified HTTP status code and JSON content type.
  *
+ * @param res - The server response to write to
  * @param status - HTTP status code to set on the response
  * @param body - Value to serialize as JSON into the response body
  */
@@ -185,10 +186,10 @@ const EXT_TO_LANG: Record<string, string> = {
 }
 
 /**
- * Determine a language identifier from a file path or filename's extension.
+ * Infers a language identifier from a file path or filename extension.
  *
- * @param path - File path or filename to infer the language from
- * @returns The language identifier mapped from the file extension, or `'text'` if the extension is unknown
+ * @param path - File path or filename to inspect
+ * @returns The mapped language identifier for the extension, or `text` if no mapping exists
  */
 function langFromPath(path: string): string {
   const ext = path.split('.').pop()?.toLowerCase() ?? ''
@@ -200,19 +201,11 @@ function langFromPath(path: string): string {
 const MAX_CITATION_LINES = 400
 
 /**
- * Dev-only write-back endpoints for /write.
+ * Register a Vite dev-only plugin that exposes /api/write/* endpoints for writing and reading content, images, snapshots, and fetching GitHub blob excerpts.
  *
- * - POST /api/write/source              { type, slug, source }       -> { ok, path }
- * - POST /api/write/upload              raw image body + ext header  -> { ok, url }
- * - POST /api/write/snapshot            { type, slug, source }       -> { ok, timestamp }
- * - GET  /api/write/snapshots/:t/:s                                  -> { ok, snapshots }
- * - GET  /api/write/snapshots/:t/:s/:ts                              -> { ok, source }
- * - GET  /api/write/github?url=...                                   -> { ok, content, lang, ... }
+ * The plugin is applied only in the development server (apply: 'serve') and mounts multiple middleware routes under /api/write to validate inputs, perform safe filesystem writes/reads, and return structured JSON responses.
  *
- * `apply: 'serve'` keeps the plugin out of `vite build`, so production
- * never gains a write surface. When the app ports to Next.js, these
- * endpoints become route handlers / server actions and this file is
- * deleted.
+ * @returns The Vite plugin instance configured with these development-only write-back endpoints.
  */
 export function writeBack(): Plugin {
   return {

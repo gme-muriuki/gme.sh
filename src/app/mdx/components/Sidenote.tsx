@@ -7,11 +7,11 @@ import { useMediaQuery } from '@/app/hooks/useMediaQuery'
 type Props = { children: ReactNode }
 
 /**
- * Tufte-style marginalia. Desktop (>=1024px): the note is portalled into
- * the `.editorial-rail` column the Layout already provides, positioned
- * absolutely so its top aligns with the inline marker. A ResizeObserver
- * on <main> recomputes when fonts load or content shifts. Mobile: the
- * marker becomes a popover trigger — the rail isn't rendered.
+ * Render a Tufte-style sidenote that displays an inline marker and shows the full note either in the editorial rail on desktop or as a popover on mobile.
+ *
+ * On viewports >= 1024px the note is portalled into the page's `.editorial-rail` and positioned so its top aligns with the inline marker; its position is kept up to date when layout or content shifts. On viewports < 1024px the marker acts as a popover trigger and the note is rendered as popover content instead of using the rail. The marker displays a 1-based document order number used for labeling and identification.
+ *
+ * @returns A React element containing the inline sidenote marker and the corresponding note content (either a portalled aside in the rail or a popover).
  */
 export function Sidenote({ children }: Props) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')

@@ -44,9 +44,9 @@ function parseGithubCitation(url: string): GithubCitation | null {
 }
 
 /**
- * Render a code block with an optional header showing filename, language, or a GitHub source citation, and a copy-to-clipboard control.
+ * Render a code block with an optional header and a copy-to-clipboard control.
  *
- * The header is shown only when not inside file tabs and when at least one of `data-source`, `data-filename`, or `data-language` is provided. If `data-source` is a GitHub blob URL, it is parsed into `repo`, truncated `ref`, `path`, and an optional `lineRange` for display. The copy button copies the rendered `<pre>` text to the clipboard, sets a temporary "Copied" visual state for 1400ms, and silently ignores clipboard failures.
+ * The header is shown only when not inside file tabs and when at least one of `data-source`, `data-filename`, or `data-language` is provided. When `data-source` is a GitHub blob URL it is parsed into `repo`, `ref`, `path`, and an optional `lineRange` for display. The copy button copies the rendered `<pre>` text to the clipboard, sets a temporary "Copied" visual state for 1400ms, and silently ignores clipboard failures.
  *
  * @param props - Props forwarded to the underlying `<pre>` including `children` and `className`. Special optional data props:
  *   - `data-filename` — filename to display in the header when no source citation is available.

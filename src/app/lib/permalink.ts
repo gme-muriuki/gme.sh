@@ -8,10 +8,10 @@ const FOLDER: Record<PostType, string> = {
 }
 
 /**
- * Get the URL path prefix for a given post type.
+ * Compute the URL path prefix for a post type.
  *
  * @param type - The post type to build the prefix for.
- * @returns `''` for `page` (root path), otherwise the folder prefix beginning with `/` (e.g. `/essays`)
+ * @returns `''` for `page` (root path), otherwise the folder prefix beginning with `/` (for example `/essays`)
  */
 export function permalinkPrefix(type: PostType): string {
   // public route for pages lives at the root (/about, not /pages/about)
@@ -32,7 +32,7 @@ export function permalink(type: PostType, slug: string): string {
 
 // disk path for a post source file, sans `src/content/`
 /**
- * Compute the relative disk path (under `src/content/`) to a post's `.mdx` source file.
+ * Computes the relative disk path (under `src/content/`) to a post's `.mdx` source file.
  *
  * @param type - The post type determining its folder (e.g., `essay`, `note`, `shipped`, `page`)
  * @param slug - The post slug (file name without extension)

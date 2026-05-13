@@ -28,11 +28,11 @@ export type AutoSave = {
 const DEBOUNCE_MS = 2_000
 
 /**
- * Debounces and persists `source` for the given `target`, avoiding redundant writes and exposing save state and a flush method.
+ * Manage debounced persistence of `source` for a given `target`, tracking save lifecycle and providing a `flush` method.
  *
- * @param target - The resource identifier (type and slug). When `null` or `undefined`, saving is disabled and the hook remains idle.
- * @param source - The current text content to be saved.
- * @returns An object with `status` describing the save lifecycle (`idle`, `unsaved`, `saving`, `saved`, or `error`) and `flush(override)` to cancel any pending debounce and immediately persist the provided content.
+ * @param target - Resource identifier (`type` and `slug`). When `null`, saving is disabled and the hook resets to idle for new targets.
+ * @param source - The current text content to be persisted.
+ * @returns An object with `status` describing the save lifecycle (`idle`, `unsaved`, `saving`, `saved` with `at` timestamp, or `error` with `message`) and `flush(override)` which cancels any pending debounce and immediately persists the provided content.
  */
 export function useAutoSave(target: Target, source: string): AutoSave {
   const [status, setStatus] = useState<SaveStatus>({ kind: 'idle' })
