@@ -101,6 +101,69 @@ const focusLine = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 )
 
+// Frontmatter + JSX-component awareness. We don't pull in a full MDX
+// parser — overkill for visual cues. A single pass over the doc tags
+// the leading `---`...`---` block as `cm-frontmatter` and any line
+// that looks like an MDX component (`<Capitalised ...>` / `</Cap>`)
+// as `cm-mdx-component`. CSS handles the visual.
+const fmLine = Decoration.line({ attributes: { class: 'cm-frontmatter' } })
+const fmFence = Decoration.line({
+  attributes: { class: 'cm-frontmatter-fence' },
+})
+const jsxLine = Decoration.line({ attributes: { class: 'cm-mdx-component' } })
+
+const FENCE_RE = /^```/
+const JSX_OPEN_RE = /^\s*<[A-Z][\w.]*[\s/>]/
+const JSX_CLOSE_RE = /^\s*<\/[A-Z]/
+
+const mdxStructure = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet
+    constructor(view: EditorView) {
+      this.decorations = this.build(view)
+    }
+    update(u: ViewUpdate) {
+      if (u.docChanged) this.decorations = this.build(u.view)
+    }
+    build(view: EditorView): DecorationSet {
+      const b = new RangeSetBuilder<Decoration>()
+      const doc = view.state.doc
+
+      let fmEnd = 0
+      if (doc.lines >= 2 && doc.line(1).text.trim() === '---') {
+        for (let i = 2; i <= doc.lines; i++) {
+          if (doc.line(i).text.trim() === '---') {
+            fmEnd = i
+            break
+          }
+        }
+      }
+      if (fmEnd > 0) {
+        for (let i = 1; i <= fmEnd; i++) {
+          const line = doc.line(i)
+          b.add(line.from, line.from, i === 1 || i === fmEnd ? fmFence : fmLine)
+        }
+      }
+
+      let inFence = false
+      for (let i = fmEnd + 1; i <= doc.lines; i++) {
+        const line = doc.line(i)
+        if (FENCE_RE.test(line.text.trimStart())) {
+          inFence = !inFence
+          continue
+        }
+        if (inFence) continue
+        if (JSX_OPEN_RE.test(line.text) || JSX_CLOSE_RE.test(line.text)) {
+          b.add(line.from, line.from, jsxLine)
+        }
+      }
+
+      return b.finish()
+    }
+  },
+  { decorations: (v) => v.decorations },
+)
+
 type Props = {
   value: string
   onChange: (v: string) => void
@@ -140,7 +203,7 @@ const theme = EditorView.theme({
   '.cm-scroller': {
     fontFamily: 'var(--font-mono)',
     fontSize: '13px',
-    lineHeight: '1.65',
+    lineHeight: '1.7',
   },
   '.cm-content': {
     padding: '12px 0',
@@ -160,6 +223,18 @@ const theme = EditorView.theme({
     width: '2px',
     backgroundColor: 'var(--brand)',
     opacity: '0.55',
+  },
+  // Frontmatter region reads as set-aside metadata, not prose.
+  '.cm-line.cm-frontmatter, .cm-line.cm-frontmatter-fence': {
+    color: 'var(--ink-faint)',
+  },
+  '.cm-line.cm-frontmatter-fence': {
+    color: 'var(--ink-faint)',
+    opacity: '0.55',
+  },
+  // MDX component lines feel like quoted invocations — slightly cooler.
+  '.cm-line.cm-mdx-component': {
+    color: 'var(--ink-muted)',
   },
   '.cm-gutters': {
     backgroundColor: 'transparent',
@@ -181,20 +256,42 @@ const theme = EditorView.theme({
   '.cm-cursor': { borderLeftColor: 'var(--brand)' },
 })
 
+// Restrained palette: headings get real size hierarchy, prose stays
+// ink, markdown marks (#, *, _, [, ], (, )) fade to ink-faint so the
+// content reads first and the structure reads second. We don't paint
+// the syntactic scaffolding in brand — that would be IDE energy.
 const highlightStyle = HighlightStyle.define([
-  { tag: t.heading1, color: 'var(--ink)', fontWeight: '600' },
-  { tag: t.heading2, color: 'var(--ink)', fontWeight: '600' },
-  { tag: t.heading3, color: 'var(--ink)', fontWeight: '500' },
-  { tag: t.keyword, color: 'var(--brand)' },
-  { tag: t.string, color: 'var(--ink-muted)' },
-  { tag: t.comment, color: 'var(--ink-faint)', fontStyle: 'italic' },
-  { tag: t.meta, color: 'var(--ink-faint)' },
-  { tag: t.url, color: 'var(--brand)' },
+  {
+    tag: t.heading1,
+    color: 'var(--ink)',
+    fontWeight: '700',
+    fontSize: '1.35em',
+  },
+  {
+    tag: t.heading2,
+    color: 'var(--ink)',
+    fontWeight: '700',
+    fontSize: '1.18em',
+  },
+  {
+    tag: t.heading3,
+    color: 'var(--ink)',
+    fontWeight: '600',
+    fontSize: '1.06em',
+  },
+  { tag: t.heading4, color: 'var(--ink)', fontWeight: '600' },
   { tag: t.emphasis, fontStyle: 'italic' },
-  { tag: t.strong, fontWeight: '600' },
-  { tag: t.link, color: 'var(--brand)' },
+  { tag: t.strong, fontWeight: '700' },
+  { tag: t.link, color: 'var(--ink)' },
+  { tag: t.url, color: 'var(--ink-faint)' },
   { tag: t.monospace, color: 'var(--ink-muted)' },
+  { tag: t.quote, color: 'var(--ink-muted)', fontStyle: 'italic' },
   { tag: t.processingInstruction, color: 'var(--ink-faint)' },
+  { tag: t.meta, color: 'var(--ink-faint)' },
+  { tag: t.contentSeparator, color: 'var(--ink-faint)' },
+  { tag: t.comment, color: 'var(--ink-faint)', fontStyle: 'italic' },
+  { tag: t.string, color: 'var(--ink-muted)' },
+  { tag: t.keyword, color: 'var(--ink)', fontWeight: '600' },
 ])
 
 export default function Editor({ value, onChange, onImageUpload }: Props) {
@@ -250,6 +347,7 @@ export default function Editor({ value, onChange, onImageUpload }: Props) {
         lineNumbers(),
         history(),
         focusLine,
+        mdxStructure,
         markdown(),
         syntaxHighlighting(highlightStyle),
         mdShortcuts,
